@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:configure="com.budgetapp.budget_app.ProgressWidgetConfigureActivity"
+    android:description="@string/progress_widget_description"
+    android:initialLayout="@layout/progress_widget"
+    android:minWidth="180dp"
+    android:minHeight="80dp"
+    android:previewLayout="@layout/progress_widget"
+    android:resizeMode="horizontal|vertical"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen">
+</appwidget-provider>

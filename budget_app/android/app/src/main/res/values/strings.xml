@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="quick_add_widget_name">Quick Add</string>
+    <string name="quick_add_widget_description">Add income or expense in one tap</string>
+    <string name="progress_widget_name">Goal / Loan Progress</string>
+    <string name="progress_widget_description">Track progress of a specific savings goal or loan</string>
+    <string name="progress_widget_configure_title">Choose what to track</string>
+    <string name="progress_widget_configure_subtitle">Select a savings goal or loan for this widget</string>
+    <string name="progress_widget_goals_header">Savings Goals</string>
+    <string name="progress_widget_loans_header">Loans</string>
+    <string name="progress_widget_configure_empty">Open Budget App and create a goal or loan first.</string>
+    <string name="progress_widget_not_configured">Tap to configure</string>
+    <string name="progress_widget_missing_item">Item not found — reconfigure widget</string>
+</resources>
