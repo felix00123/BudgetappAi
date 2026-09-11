@@ -98,13 +98,18 @@
 				<string>com.budgetappai.budgetapp</string>
 			</array>
 		</dict>
-		<!--
-		  Gmail OAuth (iOS): add a URL type whose scheme is the
-		  REVERSED_CLIENT_ID from your Google Cloud iOS OAuth client, and set
-		  GIDClientID below. Or pass --dart-define=GOOGLE_OAUTH_CLIENT_ID=...
-		-->
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>Google Sign-In</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.453862160433-baifo6q2lbo2iu9i29rg632e9i7p9nd8</string>
+			</array>
+		</dict>
 	</array>
-	<!-- <key>GIDClientID</key>
-	<string>YOUR_IOS_CLIENT_ID.apps.googleusercontent.com</string> -->
+	<key>GIDClientID</key>
+	<string>453862160433-baifo6q2lbo2iu9i29rg632e9i7p9nd8.apps.googleusercontent.com</string>
 </dict>
 </plist>
