@@ -46,7 +46,7 @@ typedef OutlookTokenWriter = Future<void> Function(OutlookTokenStore tokens);
 /// Connects to Outlook / Microsoft 365 mail via AppAuth + Microsoft Graph.
 ///
 /// Configure an Azure App Registration (personal + organizational accounts)
-/// with redirect `com.budgetapp.budget_app://oauthredirect` and delegated
+/// with redirect `com.budgetappai.budgetapp://oauthredirect` and delegated
 /// `Mail.Read`. Pass the client id with:
 /// `--dart-define=MICROSOFT_CLIENT_ID=...`
 class OutlookSyncService {
@@ -65,7 +65,7 @@ class OutlookSyncService {
   static const clientId = String.fromEnvironment('MICROSOFT_CLIENT_ID');
   static const redirectUrl = String.fromEnvironment(
     'MICROSOFT_REDIRECT_URL',
-    defaultValue: 'com.budgetapp.budget_app://oauthredirect',
+    defaultValue: 'com.budgetappai.budgetapp://oauthredirect',
   );
   static const _authorizeUrl =
       'https://login.microsoftonline.com/common/oauth2/v2.0/authorize';

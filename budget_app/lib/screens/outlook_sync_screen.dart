@@ -175,7 +175,7 @@ class _OutlookSyncScreenState extends State<OutlookSyncScreen> {
                   '1. Azure Portal → Microsoft Entra ID → App registrations → New.\n'
                   '2. Supported accounts: personal Microsoft + work/school.\n'
                   '3. Authentication → mobile redirect:\n'
-                  '   com.budgetapp.budget_app://oauthredirect\n'
+                  '   com.budgetappai.budgetapp://oauthredirect\n'
                   '4. API permissions → Microsoft Graph → Mail.Read (delegated).\n'
                   '5. Copy Application (client) ID and run:\n'
                   '   flutter run --dart-define=MICROSOFT_CLIENT_ID=your-id',
