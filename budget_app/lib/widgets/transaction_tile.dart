@@ -41,7 +41,7 @@ class TransactionTile extends StatelessWidget {
         padding: const EdgeInsets.only(right: 20),
         decoration: BoxDecoration(
           color: AppColors.expense.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         child: const Icon(Icons.delete_outline, color: AppColors.expense),
       ),
@@ -49,19 +49,19 @@ class TransactionTile extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
             child: Row(
               children: [
                 Container(
-                  width: 44,
-                  height: 44,
+                  width: 42,
+                  height: 42,
                   decoration: BoxDecoration(
                     color: iconColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
-                  child: Icon(icon, color: iconColor, size: 22),
+                  child: Icon(icon, color: iconColor, size: 21),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -70,9 +70,12 @@ class TransactionTile extends StatelessWidget {
                     children: [
                       Text(
                         transaction.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
-                          fontSize: 15,
+                          fontSize: 14.5,
+                          letterSpacing: -0.2,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -80,19 +83,21 @@ class TransactionTile extends StatelessWidget {
                         '$categoryName · $accountName · ${formatShortDate(transaction.date)}',
                         style: const TextStyle(
                           color: AppColors.textSecondary,
-                          fontSize: 13,
+                          fontSize: 12.5,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(width: 8),
                 Text(
                   '${isIncome ? '+' : '-'}${formatCurrency(transaction.amount)}',
                   style: TextStyle(
-                    color: color,
+                    color: isIncome ? color : AppColors.textPrimary,
                     fontWeight: FontWeight.w700,
-                    fontSize: 15,
+                    fontSize: 14.5,
+                    letterSpacing: -0.3,
                   ),
                 ),
               ],

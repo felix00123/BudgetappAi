@@ -1,5 +1,7 @@
 enum TransactionType { income, expense }
 
+enum TransactionSource { manual, excel, email, ai }
+
 class Transaction {
   final String id;
   final String title;
@@ -9,6 +11,10 @@ class Transaction {
   final String accountId;
   final DateTime date;
   final String? note;
+  final TransactionSource source;
+
+  /// Stable id of the originating record, used to avoid importing twice.
+  final String? externalId;
 
   Transaction({
     required this.id,
@@ -19,6 +25,8 @@ class Transaction {
     required this.accountId,
     required this.date,
     this.note,
+    this.source = TransactionSource.manual,
+    this.externalId,
       });
 
   Map<String, dynamic> toJson() => {
@@ -30,6 +38,8 @@ class Transaction {
         'accountId': accountId,
         'date': date.toIso8601String(),
         'note': note,
+        'source': source.name,
+        'externalId': externalId,
       };
 
   factory Transaction.fromJson(Map<String, dynamic> json) => Transaction(
@@ -42,7 +52,16 @@ class Transaction {
         accountId: json['accountId'] as String? ?? 'acc_cash',
         date: DateTime.parse(json['date'] as String),
         note: json['note'] as String?,
+        source: _sourceFromJson(json['source'] as String?),
+        externalId: json['externalId'] as String?,
       );
+
+  static TransactionSource _sourceFromJson(String? value) {
+    for (final source in TransactionSource.values) {
+      if (source.name == value) return source;
+    }
+    return TransactionSource.manual;
+  }
 
   static String _legacyCategoryId(String? name, String type) {
     if (name == null) {
@@ -73,6 +92,8 @@ class Transaction {
     String? accountId,
     DateTime? date,
     String? note,
+    TransactionSource? source,
+    String? externalId,
   }) =>
       Transaction(
         id: id,
@@ -83,5 +104,7 @@ class Transaction {
         accountId: accountId ?? this.accountId,
         date: date ?? this.date,
         note: note ?? this.note,
+        source: source ?? this.source,
+        externalId: externalId ?? this.externalId,
       );
 }

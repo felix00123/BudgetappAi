@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../models/ai_provider_settings.dart';
 import '../models/chat_message.dart';
 import '../providers/budget_provider.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_nav_bar.dart';
 
 class AiAdvisorScreen extends StatefulWidget {
   const AiAdvisorScreen({super.key});
@@ -33,6 +35,7 @@ class _AiAdvisorScreenState extends State<AiAdvisorScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('AI Financial Advisor'),
         actions: [
@@ -131,7 +134,15 @@ class _AiAdvisorScreenState extends State<AiAdvisorScreen> {
 
   void _showSettings(BuildContext context) {
     final provider = context.read<BudgetProvider>();
-    final keyController = TextEditingController(text: provider.openAiApiKey ?? '');
+    final initial = provider.aiSettings;
+    var kind = initial.kind;
+    final openAiKey = TextEditingController(text: initial.openAiApiKey ?? '');
+    final geminiKey = TextEditingController(text: initial.geminiApiKey ?? '');
+    final localUrl = TextEditingController(text: initial.localBaseUrl);
+    final localModel = TextEditingController(text: initial.localModel);
+    final openAiModel = TextEditingController(text: initial.openAiModel);
+    final geminiModel = TextEditingController(text: initial.geminiModel);
+    final localApiKey = TextEditingController(text: initial.localApiKey ?? '');
 
     showModalBottomSheet(
       context: context,
@@ -139,55 +150,177 @@ class _AiAdvisorScreenState extends State<AiAdvisorScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.fromLTRB(
-          20,
-          20,
-          20,
-          MediaQuery.of(ctx).viewInsets.bottom + 20,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'AI Settings',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => Padding(
+          padding: EdgeInsets.fromLTRB(
+            20,
+            20,
+            20,
+            MediaQuery.of(ctx).viewInsets.bottom + 20,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'AI Settings',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Advisor works offline with local analysis. Add your own '
+                  'OpenAI, Gemini, or local (Ollama) endpoint for richer answers '
+                  'and receipt/voice capture.',
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Provider',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                SegmentedButton<AiProviderKind>(
+                  segments: const [
+                    ButtonSegment(
+                      value: AiProviderKind.openAi,
+                      label: Text('OpenAI'),
+                    ),
+                    ButtonSegment(
+                      value: AiProviderKind.gemini,
+                      label: Text('Gemini'),
+                    ),
+                    ButtonSegment(
+                      value: AiProviderKind.local,
+                      label: Text('Local'),
+                    ),
+                  ],
+                  selected: {kind},
+                  onSelectionChanged: (value) {
+                    setModalState(() => kind = value.first);
+                  },
+                ),
+                const SizedBox(height: 16),
+                if (kind == AiProviderKind.openAi) ...[
+                  TextField(
+                    controller: openAiKey,
+                    decoration: const InputDecoration(
+                      labelText: 'OpenAI API key',
+                      hintText: 'sk-...',
+                    ),
+                    obscureText: true,
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: openAiModel,
+                    decoration: const InputDecoration(
+                      labelText: 'Model',
+                      hintText: 'gpt-4o-mini',
+                    ),
+                  ),
+                ],
+                if (kind == AiProviderKind.gemini) ...[
+                  TextField(
+                    controller: geminiKey,
+                    decoration: const InputDecoration(
+                      labelText: 'Gemini API key',
+                      hintText: 'AIza...',
+                    ),
+                    obscureText: true,
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: geminiModel,
+                    decoration: const InputDecoration(
+                      labelText: 'Model',
+                      hintText: 'gemini-2.0-flash',
+                    ),
+                  ),
+                ],
+                if (kind == AiProviderKind.local) ...[
+                  TextField(
+                    controller: localUrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Base URL (OpenAI-compatible)',
+                      hintText: 'http://192.168.1.10:11434/v1',
+                    ),
+                    keyboardType: TextInputType.url,
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: localModel,
+                    decoration: const InputDecoration(
+                      labelText: 'Model',
+                      hintText: 'llama3.2',
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: localApiKey,
+                    decoration: const InputDecoration(
+                      labelText: 'API key (optional)',
+                      hintText: 'Usually blank for Ollama',
+                    ),
+                    obscureText: true,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'On a phone, use your computer\'s LAN IP — not 127.0.0.1.',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () async {
+                      final settings = AiProviderSettings(
+                        kind: kind,
+                        openAiApiKey: openAiKey.text.trim().isEmpty
+                            ? null
+                            : openAiKey.text.trim(),
+                        geminiApiKey: geminiKey.text.trim().isEmpty
+                            ? null
+                            : geminiKey.text.trim(),
+                        localBaseUrl: localUrl.text.trim().isEmpty
+                            ? 'http://127.0.0.1:11434/v1'
+                            : localUrl.text.trim(),
+                        localApiKey: localApiKey.text.trim().isEmpty
+                            ? null
+                            : localApiKey.text.trim(),
+                        openAiModel: openAiModel.text.trim().isEmpty
+                            ? 'gpt-4o-mini'
+                            : openAiModel.text.trim(),
+                        geminiModel: geminiModel.text.trim().isEmpty
+                            ? 'gemini-2.0-flash'
+                            : geminiModel.text.trim(),
+                        localModel: localModel.text.trim().isEmpty
+                            ? 'llama3.2'
+                            : localModel.text.trim(),
+                      );
+                      await provider.setAiSettings(settings);
+                      if (ctx.mounted) Navigator.pop(ctx);
+                    },
+                    child: const Text('Save'),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'The advisor works offline with smart local analysis. '
-              'Optionally add an OpenAI API key for enhanced AI responses.',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: keyController,
-              decoration: const InputDecoration(
-                labelText: 'OpenAI API Key (optional)',
-                hintText: 'sk-...',
-              ),
-              obscureText: true,
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: () async {
-                  await provider.setOpenAiApiKey(
-                    keyController.text.trim().isEmpty
-                        ? null
-                        : keyController.text.trim(),
-                  );
-                  if (ctx.mounted) Navigator.pop(ctx);
-                },
-                child: const Text('Save'),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
-    );
+    ).whenComplete(() {
+      openAiKey.dispose();
+      geminiKey.dispose();
+      localUrl.dispose();
+      localModel.dispose();
+      openAiModel.dispose();
+      geminiModel.dispose();
+      localApiKey.dispose();
+    });
   }
 }
 
@@ -399,7 +532,7 @@ class _ChatInput extends StatelessWidget {
         16,
         12,
         16,
-        MediaQuery.of(context).padding.bottom + 12,
+        AppNavBar.reservedHeight(context) + 8,
       ),
       decoration: const BoxDecoration(
         color: Colors.white,

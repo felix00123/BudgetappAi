@@ -14,7 +14,7 @@ struct ProgressItem {
 }
 
 enum WidgetDataLoader {
-    static let appGroupId = "group.com.budgetapp.budgetApp"
+    static let appGroupId = "group.com.budgetappai.sharedai"
     private static let goalsKey = "goals_widget_data"
     private static let loansKey = "loans_widget_data"
 

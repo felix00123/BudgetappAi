@@ -1,0 +1,14 @@
+{
+  "description": "Template for Azure App Registration used by Outlook sync. Do not put secrets here — pass the client id at build time.",
+  "client_id": "YOUR_AZURE_APPLICATION_CLIENT_ID",
+  "redirect_uri": "com.budgetapp.budget_app://oauthredirect",
+  "tenant": "common",
+  "scopes": [
+    "openid",
+    "profile",
+    "email",
+    "offline_access",
+    "https://graph.microsoft.com/Mail.Read"
+  ],
+  "run": "flutter run --dart-define=MICROSOFT_CLIENT_ID=YOUR_AZURE_APPLICATION_CLIENT_ID"
+}

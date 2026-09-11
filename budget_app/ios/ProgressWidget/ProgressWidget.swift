@@ -76,7 +76,7 @@ private struct ProgressWidgetProvider: TimelineProvider {
     }
 
     private func loadEntry() -> ProgressEntry {
-        let defaults = UserDefaults(suiteName: "group.com.budgetapp.budgetApp")
+        let defaults = UserDefaults(suiteName: "group.com.budgetappai.sharedai")
         let type = defaults?.string(forKey: "flutter.widget_selected_type")
         let itemId = defaults?.string(forKey: "flutter.widget_selected_id")
 

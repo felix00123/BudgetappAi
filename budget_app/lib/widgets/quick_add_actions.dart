@@ -3,25 +3,54 @@ import 'package:flutter/material.dart';
 import '../models/transaction.dart';
 import '../screens/add_transaction_screen.dart';
 import '../theme/app_theme.dart';
+import 'ai_capture_actions.dart';
 
-/// Side-by-side quick actions to add income or expense.
+/// Side-by-side quick actions to add income or expense, plus AI capture.
 class QuickAddActions extends StatelessWidget {
   const QuickAddActions({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: QuickAddIncomeWidget(
-            onTap: () => _open(context, TransactionType.income),
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: QuickAddIncomeWidget(
+                onTap: () => _open(context, TransactionType.income),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: QuickAddExpenseWidget(
+                onTap: () => _open(context, TransactionType.expense),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: QuickAddExpenseWidget(
-            onTap: () => _open(context, TransactionType.expense),
-          ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _QuickAddTile(
+                label: 'Scan receipt',
+                subtitle: 'Photo + AI',
+                icon: Icons.photo_camera_rounded,
+                color: AppColors.primary,
+                onTap: () => AiCaptureActions.captureReceipt(context),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _QuickAddTile(
+                label: 'Say expense',
+                subtitle: 'Voice + AI',
+                icon: Icons.mic_rounded,
+                color: AppColors.secondary,
+                onTap: () => AiCaptureActions.captureVoice(context),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -120,31 +149,35 @@ class _QuickAddTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(AppRadius.lg);
+
     return Material(
-      color: color.withValues(alpha: 0.1),
-      borderRadius: BorderRadius.circular(16),
+      color: AppColors.card,
+      borderRadius: radius,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
+        borderRadius: radius,
+        child: Ink(
           padding: EdgeInsets.symmetric(
-            horizontal: compact ? 12 : 16,
-            vertical: compact ? 14 : 18,
+            horizontal: compact ? 12 : 14,
+            vertical: compact ? 12 : 14,
           ),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: color.withValues(alpha: 0.25)),
+            borderRadius: radius,
+            border: Border.all(color: AppColors.border),
+            boxShadow: AppShadows.card,
           ),
           child: Row(
             children: [
               Container(
-                width: compact ? 40 : 44,
-                height: compact ? 40 : 44,
+                width: compact ? 38 : 42,
+                height: compact ? 38 : 42,
                 decoration: BoxDecoration(
                   color: color,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                  boxShadow: AppShadows.glow(color),
                 ),
-                child: Icon(icon, color: Colors.white, size: compact ? 20 : 22),
+                child: Icon(icon, color: Colors.white, size: compact ? 19 : 21),
               ),
               SizedBox(width: compact ? 10 : 12),
               Expanded(
@@ -153,29 +186,27 @@ class _QuickAddTile extends StatelessWidget {
                   children: [
                     Text(
                       label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: color,
+                        color: AppColors.textPrimary,
                         fontWeight: FontWeight.w700,
-                        fontSize: compact ? 14 : 15,
+                        fontSize: compact ? 13.5 : 14.5,
+                        letterSpacing: -0.2,
                       ),
                     ),
                     if (subtitle != null) ...[
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 1),
                       Text(
                         subtitle!,
                         style: const TextStyle(
                           color: AppColors.textSecondary,
-                          fontSize: 12,
+                          fontSize: 11.5,
                         ),
                       ),
                     ],
                   ],
                 ),
-              ),
-              Icon(
-                Icons.add_circle_outline,
-                color: color.withValues(alpha: 0.8),
-                size: compact ? 20 : 22,
               ),
             ],
           ),

@@ -8,6 +8,13 @@ final monthYearFormat = DateFormat('MMMM yyyy');
 final fileDateFormat = DateFormat('yyyy-MM-dd');
 
 String formatCurrency(double amount) => currencyFormat.format(amount);
+
+/// Formats an amount that came from a bank in its own currency.
+String formatAmountWithCurrency(double amount, String currency) {
+  final symbol = currency == 'USD' ? 'US\$' : 'RD\$';
+  return NumberFormat.currency(symbol: symbol, decimalDigits: 2).format(amount);
+}
+
 String formatCompactCurrency(double amount) => compactCurrencyFormat.format(amount);
 String formatDate(DateTime date) => dateFormat.format(date);
 String formatShortDate(DateTime date) => shortDateFormat.format(date);

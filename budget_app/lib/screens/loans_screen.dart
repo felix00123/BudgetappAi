@@ -6,6 +6,7 @@ import '../models/loan.dart';
 import '../providers/budget_provider.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
+import '../widgets/app_nav_bar.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/loan_card.dart';
 import 'add_loan_screen.dart';
@@ -18,6 +19,7 @@ class LoansScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Loans'),
         actions: [
@@ -87,7 +89,7 @@ class LoansScreen extends StatelessWidget {
                   ),
                 ),
               ],
-              const SizedBox(height: 80),
+              SizedBox(height: AppNavBar.contentInset(context)),
             ],
           );
         },

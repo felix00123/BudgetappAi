@@ -6,6 +6,7 @@ import '../models/savings_goal.dart';
 import '../providers/budget_provider.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
+import '../widgets/app_nav_bar.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/goal_card.dart';
 import 'add_goal_screen.dart';
@@ -17,6 +18,7 @@ class GoalsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Savings Goals'),
         actions: [
@@ -63,7 +65,7 @@ class GoalsScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 80),
+              SizedBox(height: AppNavBar.contentInset(context)),
             ],
           );
         },

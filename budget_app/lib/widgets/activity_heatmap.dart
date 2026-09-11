@@ -70,14 +70,16 @@ class ActivityHeatmap extends StatelessWidget {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            for (final day in week)
+                            for (var i = 0; i < week.length; i++)
                               Padding(
-                                padding: EdgeInsets.only(bottom: cellSpacing),
+                                padding: EdgeInsets.only(
+                                  bottom: i < week.length - 1 ? cellSpacing : 0,
+                                ),
                                 child: _HeatmapCell(
-                                  date: day.date,
-                                  count: day.count,
-                                  isToday: day.isToday,
-                                  isFuture: day.isFuture,
+                                  date: week[i].date,
+                                  count: week[i].count,
+                                  isToday: week[i].isToday,
+                                  isFuture: week[i].isFuture,
                                   color: color,
                                   emptyColor: empty,
                                   size: cellSize,

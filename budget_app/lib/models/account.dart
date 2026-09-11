@@ -9,12 +9,20 @@ class Account {
   final double initialBalance;
   final int colorValue;
 
+  /// Issuer shown on bank alert emails, e.g. BHD, APAP, Banreservas.
+  final String? bank;
+
+  /// Last four digits used to match bank alert emails to this account.
+  final String? lastFour;
+
   Account({
     required this.id,
     required this.name,
     required this.type,
     this.initialBalance = 0,
     required this.colorValue,
+    this.bank,
+    this.lastFour,
   });
 
   Color get color => Color(colorValue);
@@ -25,6 +33,8 @@ class Account {
         'type': type.name,
         'initialBalance': initialBalance,
         'colorValue': colorValue,
+        'bank': bank,
+        'lastFour': lastFour,
       };
 
   factory Account.fromJson(Map<String, dynamic> json) => Account(
@@ -33,6 +43,8 @@ class Account {
         type: AccountType.values.byName(json['type'] as String),
         initialBalance: (json['initialBalance'] as num?)?.toDouble() ?? 0,
         colorValue: json['colorValue'] as int,
+        bank: json['bank'] as String?,
+        lastFour: json['lastFour'] as String?,
       );
 
   Account copyWith({
@@ -40,6 +52,8 @@ class Account {
     AccountType? type,
     double? initialBalance,
     int? colorValue,
+    String? bank,
+    String? lastFour,
   }) =>
       Account(
         id: id,
@@ -47,6 +61,8 @@ class Account {
         type: type ?? this.type,
         initialBalance: initialBalance ?? this.initialBalance,
         colorValue: colorValue ?? this.colorValue,
+        bank: bank ?? this.bank,
+        lastFour: lastFour ?? this.lastFour,
       );
 }
 

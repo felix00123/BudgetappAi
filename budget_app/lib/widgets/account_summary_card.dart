@@ -7,6 +7,7 @@ import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import '../screens/manage_screen.dart';
 
+/// Horizontal strip of account balances, swipeable when there are several.
 class AccountSummaryCard extends StatelessWidget {
   const AccountSummaryCard({super.key});
 
@@ -24,7 +25,11 @@ class AccountSummaryCard extends StatelessWidget {
           children: [
             const Text(
               'Accounts',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.3,
+              ),
             ),
             TextButton(
               onPressed: () => Navigator.push(
@@ -35,33 +40,114 @@ class AccountSummaryCard extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 8),
-        ...provider.accounts.map((account) {
-          final balance = provider.accountBalance(account.id);
-          return Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: account.color.withValues(alpha: 0.15),
+        const SizedBox(height: 4),
+        SizedBox(
+          height: 118,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.none,
+            padding: EdgeInsets.zero,
+            itemCount: provider.accounts.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 12),
+            itemBuilder: (context, index) {
+              final account = provider.accounts[index];
+              return _AccountTile(
+                account: account,
+                balance: provider.accountBalance(account.id),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AccountTile extends StatelessWidget {
+  const _AccountTile({required this.account, required this.balance});
+
+  final Account account;
+  final double balance;
+
+  @override
+  Widget build(BuildContext context) {
+    final subtitle = account.lastFour == null
+        ? accountTypeLabel(account.type)
+        : '${accountTypeLabel(account.type)} ··${account.lastFour}';
+
+    return Container(
+      width: 168,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.border),
+        boxShadow: AppShadows.card,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: account.color.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                ),
                 child: Icon(
                   accountTypeIcon(account.type),
                   color: account.color,
-                  size: 20,
+                  size: 18,
                 ),
               ),
-              title: Text(account.name),
-              subtitle: Text(accountTypeLabel(account.type)),
-              trailing: Text(
-                formatCurrency(balance),
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: balance >= 0 ? AppColors.income : AppColors.expense,
+              const Spacer(),
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: account.color,
                 ),
+              ),
+            ],
+          ),
+          const Spacer(),
+          Text(
+            account.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 13.5,
+            ),
+          ),
+          Text(
+            subtitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 11.5,
+            ),
+          ),
+          const SizedBox(height: 6),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              formatCurrency(balance),
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 17,
+                letterSpacing: -0.5,
+                color: balance < 0 ? AppColors.expense : AppColors.textPrimary,
               ),
             ),
-          );
-        }),
-      ],
+          ),
+        ],
+      ),
     );
   }
 }

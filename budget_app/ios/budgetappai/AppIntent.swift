@@ -43,10 +43,14 @@ struct ConfigurationAppIntent: WidgetConfigurationIntent {
 
     @Parameter(title: "Track")
     var item: ProgressItemEntity?
+
+    func perform() async throws -> some IntentResult {
+        .result()
+    }
 }
 
 extension ConfigurationAppIntent {
-    fileprivate static var sampleGoal: ConfigurationAppIntent {
+    static var sampleGoal: ConfigurationAppIntent {
         let intent = ConfigurationAppIntent()
         intent.item = ProgressItemEntity(
             item: ProgressItem(

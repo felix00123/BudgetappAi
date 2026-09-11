@@ -24,6 +24,16 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Budget App needs access to your photo library so you can import receipts and budget files.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Budget App needs the camera to photograph receipts and categorize expenses with AI.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Budget App needs the microphone so you can dictate expenses by voice.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Budget App uses speech recognition to turn what you say into an expense draft.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>
@@ -72,12 +82,29 @@
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLName</key>
-			<string>com.budgetapp.budgetApp</string>
+			<string>com.budgetappai.budgetapp</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>budgetapp</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.budgetapp.budget_app.outlook</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.budgetapp.budget_app</string>
+			</array>
+		</dict>
+		<!--
+		  Gmail OAuth (iOS): add a URL type whose scheme is the
+		  REVERSED_CLIENT_ID from your Google Cloud iOS OAuth client, and set
+		  GIDClientID below. Or pass --dart-define=GOOGLE_OAUTH_CLIENT_ID=...
+		-->
 	</array>
+	<!-- <key>GIDClientID</key>
+	<string>YOUR_IOS_CLIENT_ID.apps.googleusercontent.com</string> -->
 </dict>
 </plist>

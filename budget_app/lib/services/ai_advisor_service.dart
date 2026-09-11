@@ -1,17 +1,18 @@
-import 'dart:convert';
-
-import 'package:http/http.dart' as http;
-
 import '../models/account.dart';
+import '../models/ai_provider_settings.dart';
 import '../models/category.dart';
 import '../models/loan.dart';
 import '../models/savings_goal.dart';
 import '../models/transaction.dart';
+import 'ai_llm_client.dart';
 import 'financial_context_builder.dart';
 import '../utils/formatters.dart';
 
 class AiAdvisorService {
+  AiAdvisorService({AiLlmClient? llm}) : _llm = llm ?? AiLlmClient();
+
   final _contextBuilder = FinancialContextBuilder();
+  final AiLlmClient _llm;
 
   FinancialContext buildContext({
     required List<Transaction> transactions,
@@ -43,20 +44,35 @@ class AiAdvisorService {
     required List<SavingsGoal> goals,
     required List<BudgetCategory> categories,
     required List<Transaction> transactions,
-    String? openAiApiKey,
+    AiProviderSettings? aiSettings,
+    @Deprecated('Use aiSettings') String? openAiApiKey,
   }) async {
     final spanish = _isSpanish(userMessage);
+    final settings = aiSettings ??
+        AiProviderSettings(
+          openAiApiKey: openAiApiKey,
+        );
 
-    if (openAiApiKey != null && openAiApiKey.isNotEmpty) {
+    if (settings.isConfigured) {
       try {
-        return await _getOpenAiAdvice(
-          apiKey: openAiApiKey,
-          userMessage: userMessage,
-          context: context,
-          spanish: spanish,
+        final lang = spanish ? 'Spanish' : 'English';
+        final promptContext = context.toPromptText();
+        return await _llm.completeText(
+          settings: settings,
+          systemPrompt:
+              'You are a friendly, practical personal finance advisor inside a budget app. '
+              'You ALWAYS use the user\'s real data below — their goals, progress, recent income, '
+              'recent expenses, accounts, and monthly totals. Reference specific amounts, categories, '
+              'and goal names when relevant. Give clear, actionable advice. '
+              'Use bullet points when helpful. Keep responses under 350 words. '
+              'Respond in $lang.\n\n'
+              'USER FINANCIAL DATA:\n$promptContext',
+          userPrompt: userMessage,
+          temperature: 0.7,
+          maxTokens: 600,
         );
       } catch (_) {
-        // Fall back to local advisor
+        // Fall back to built-in keyword advisor.
       }
     }
     return _getLocalAdvice(
@@ -67,51 +83,6 @@ class AiAdvisorService {
       categories: categories,
       spanish: spanish,
     );
-  }
-
-  Future<String> _getOpenAiAdvice({
-    required String apiKey,
-    required String userMessage,
-    required FinancialContext context,
-    required bool spanish,
-  }) async {
-    final lang = spanish ? 'Spanish' : 'English';
-    final promptContext = context.toPromptText();
-
-    final response = await http.post(
-      Uri.parse('https://api.openai.com/v1/chat/completions'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $apiKey',
-      },
-      body: jsonEncode({
-        'model': 'gpt-4o-mini',
-        'messages': [
-          {
-            'role': 'system',
-            'content':
-                'You are a friendly, practical personal finance advisor inside a budget app. '
-                'You ALWAYS use the user\'s real data below — their goals, progress, recent income, '
-                'recent expenses, accounts, and monthly totals. Reference specific amounts, categories, '
-                'and goal names when relevant. Give clear, actionable advice. '
-                'Use bullet points when helpful. Keep responses under 350 words. '
-                'Respond in $lang.\n\n'
-                'USER FINANCIAL DATA:\n$promptContext',
-          },
-          {'role': 'user', 'content': userMessage},
-        ],
-        'max_tokens': 600,
-        'temperature': 0.7,
-      }),
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception('OpenAI API error: ${response.statusCode}');
-    }
-
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    final choices = data['choices'] as List;
-    return choices.first['message']['content'] as String;
   }
 
   String _getLocalAdvice({

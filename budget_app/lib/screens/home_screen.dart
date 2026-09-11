@@ -7,6 +7,7 @@ import '../providers/budget_provider.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/account_summary_card.dart';
+import '../widgets/app_nav_bar.dart';
 import '../widgets/balance_card.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/goal_card.dart';
@@ -18,9 +19,54 @@ import '../widgets/transaction_tile.dart';
 import 'add_transaction_screen.dart';
 import 'data_screen.dart';
 import 'goals_screen.dart';
+import 'insights_screen.dart';
 import 'loans_screen.dart';
 import 'manage_screen.dart';
 import '../models/transaction.dart';
+
+String _greeting() {
+  final hour = DateTime.now().hour;
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+}
+
+/// Small tonal icon button used in the home header.
+class _HeaderButton extends StatelessWidget {
+  const _HeaderButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          child: Ink(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Icon(icon, size: 18, color: AppColors.textPrimary),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -28,7 +74,9 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: SafeArea(
+        bottom: false,
         child: Consumer<BudgetProvider>(
           builder: (context, provider, _) {
             if (provider.isLoading) {
@@ -46,45 +94,63 @@ class HomeScreen extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Hello! 👋',
-                                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                ),
-                                Text(
-                                  formatMonthYear(DateTime.now()),
-                                  style: const TextStyle(
-                                    color: AppColors.textSecondary,
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _greeting(),
+                                    style: const TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: -0.6,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    formatMonthYear(DateTime.now()),
+                                    style: const TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                IconButton(
-                                  onPressed: () => Navigator.push(
+                                _HeaderButton(
+                                  icon: Icons.insights_rounded,
+                                  tooltip: 'Insights',
+                                  onTap: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const InsightsScreen(),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                _HeaderButton(
+                                  icon: Icons.tune_rounded,
+                                  tooltip: 'Categories & Accounts',
+                                  onTap: () => Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                       builder: (_) => const ManageScreen(),
                                     ),
                                   ),
-                                  icon: const Icon(Icons.tune_outlined),
-                                  tooltip: 'Categories & Accounts',
                                 ),
-                                IconButton(
-                                  onPressed: () => Navigator.push(
+                                const SizedBox(width: 8),
+                                _HeaderButton(
+                                  icon: Icons.swap_vert_rounded,
+                                  tooltip: 'Import & Export',
+                                  onTap: () => Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                       builder: (_) => const DataScreen(),
                                     ),
                                   ),
-                                  icon: const Icon(Icons.swap_vert_rounded),
-                                  tooltip: 'Import & Export',
                                 ),
                               ],
                             ),
@@ -241,7 +307,12 @@ class HomeScreen extends StatelessWidget {
                   )
                 else
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      0,
+                      16,
+                      AppNavBar.contentInset(context),
+                    ),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {

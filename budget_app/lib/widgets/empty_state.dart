@@ -25,19 +25,25 @@ class EmptyState extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(22),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.primary.withValues(alpha: 0.16),
+                    AppColors.primary.withValues(alpha: 0.04),
+                  ],
+                ),
               ),
-              child: Icon(icon, size: 48, color: AppColors.primary),
+              child: Icon(icon, size: 44, color: AppColors.primary),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 22),
             Text(
               title,
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
+                letterSpacing: -0.3,
               ),
               textAlign: TextAlign.center,
             ),
@@ -47,6 +53,7 @@ class EmptyState extends StatelessWidget {
               style: const TextStyle(
                 color: AppColors.textSecondary,
                 fontSize: 14,
+                height: 1.45,
               ),
               textAlign: TextAlign.center,
             ),

@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../models/account.dart';
+import '../models/ai_provider_settings.dart';
+import '../models/balance_snapshot.dart';
 import '../models/category.dart';
 import '../models/chat_message.dart';
 import '../models/loan.dart';
@@ -19,6 +21,7 @@ class StorageService {
   static const _settingsBox = 'settings';
   static const _categoriesBox = 'categories';
   static const _accountsBox = 'accounts';
+  static const _balanceSnapshotsBox = 'balance_snapshots';
 
   late Box<String> _transactions;
   late Box<String> _goals;
@@ -28,6 +31,7 @@ class StorageService {
   late Box _settings;
   late Box<String> _categories;
   late Box<String> _accounts;
+  late Box<String> _balanceSnapshots;
 
   Future<void> init() async {
     await Hive.initFlutter();
@@ -39,6 +43,7 @@ class StorageService {
     _settings = await Hive.openBox(_settingsBox);
     _categories = await Hive.openBox<String>(_categoriesBox);
     _accounts = await Hive.openBox<String>(_accountsBox);
+    _balanceSnapshots = await Hive.openBox<String>(_balanceSnapshotsBox);
 
     await _seedDefaultsIfNeeded();
   }
@@ -99,6 +104,21 @@ class StorageService {
 
   Future<void> deleteAccount(String id) async {
     await _accounts.delete(id);
+  }
+
+  List<BalanceSnapshot> getBalanceSnapshots() {
+    return _balanceSnapshots.values
+        .map((e) => BalanceSnapshot.fromJson(jsonDecode(e) as Map<String, dynamic>))
+        .toList()
+      ..sort((a, b) => a.capturedAt.compareTo(b.capturedAt));
+  }
+
+  Future<void> saveBalanceSnapshot(BalanceSnapshot snapshot) async {
+    await _balanceSnapshots.put(snapshot.id, jsonEncode(snapshot.toJson()));
+  }
+
+  Future<void> deleteBalanceSnapshot(String id) async {
+    await _balanceSnapshots.delete(id);
   }
 
   List<SavingsGoal> getGoals() {
@@ -165,14 +185,134 @@ class StorageService {
     await _chat.clear();
   }
 
-  String? get openAiApiKey => _settings.get('openAiApiKey') as String?;
+  String? get openAiApiKey => aiProviderSettings.openAiApiKey;
 
   Future<void> setOpenAiApiKey(String? key) async {
-    if (key == null || key.isEmpty) {
+    final current = aiProviderSettings;
+    await setAiProviderSettings(
+      current.copyWith(
+        openAiApiKey: key,
+        clearOpenAiKey: key == null || key.isEmpty,
+        kind: AiProviderKind.openAi,
+      ),
+    );
+  }
+
+  AiProviderSettings get aiProviderSettings {
+    final raw = _settings.get('aiProviderSettings') as String?;
+    if (raw != null && raw.isNotEmpty) {
+      try {
+        return AiProviderSettings.fromJson(
+          jsonDecode(raw) as Map<String, dynamic>,
+        );
+      } catch (_) {
+        // Fall through to legacy key.
+      }
+    }
+    final legacy = _settings.get('openAiApiKey') as String?;
+    if (legacy != null && legacy.isNotEmpty) {
+      return AiProviderSettings(openAiApiKey: legacy);
+    }
+    return const AiProviderSettings();
+  }
+
+  Future<void> setAiProviderSettings(AiProviderSettings settings) async {
+    await _settings.put(
+      'aiProviderSettings',
+      jsonEncode(settings.toJson()),
+    );
+    // Keep legacy key in sync for older code paths.
+    if (settings.openAiApiKey == null || settings.openAiApiKey!.isEmpty) {
       await _settings.delete('openAiApiKey');
     } else {
-      await _settings.put('openAiApiKey', key);
+      await _settings.put('openAiApiKey', settings.openAiApiKey);
     }
+  }
+
+  String? get gmailAccountEmail =>
+      _settings.get('gmailAccountEmail') as String?;
+
+  Future<void> setGmailAccountEmail(String? email) async {
+    if (email == null || email.isEmpty) {
+      await _settings.delete('gmailAccountEmail');
+    } else {
+      await _settings.put('gmailAccountEmail', email);
+    }
+  }
+
+  DateTime? get lastGmailSyncAt {
+    final raw = _settings.get('lastGmailSyncAt') as String?;
+    if (raw == null) return null;
+    return DateTime.tryParse(raw);
+  }
+
+  Future<void> setLastGmailSyncAt(DateTime? at) async {
+    if (at == null) {
+      await _settings.delete('lastGmailSyncAt');
+    } else {
+      await _settings.put('lastGmailSyncAt', at.toIso8601String());
+    }
+  }
+
+  String? get outlookAccountEmail =>
+      _settings.get('outlookAccountEmail') as String?;
+
+  Future<void> setOutlookAccountEmail(String? email) async {
+    if (email == null || email.isEmpty) {
+      await _settings.delete('outlookAccountEmail');
+    } else {
+      await _settings.put('outlookAccountEmail', email);
+    }
+  }
+
+  DateTime? get lastOutlookSyncAt {
+    final raw = _settings.get('lastOutlookSyncAt') as String?;
+    if (raw == null) return null;
+    return DateTime.tryParse(raw);
+  }
+
+  Future<void> setLastOutlookSyncAt(DateTime? at) async {
+    if (at == null) {
+      await _settings.delete('lastOutlookSyncAt');
+    } else {
+      await _settings.put('lastOutlookSyncAt', at.toIso8601String());
+    }
+  }
+
+  String? get outlookAccessToken =>
+      _settings.get('outlookAccessToken') as String?;
+
+  String? get outlookRefreshToken =>
+      _settings.get('outlookRefreshToken') as String?;
+
+  DateTime? get outlookTokenExpiresAt {
+    final raw = _settings.get('outlookTokenExpiresAt') as String?;
+    if (raw == null) return null;
+    return DateTime.tryParse(raw);
+  }
+
+  Future<void> setOutlookTokens({
+    String? accessToken,
+    String? refreshToken,
+    DateTime? expiresAt,
+    String? accountEmail,
+  }) async {
+    if (accessToken == null || accessToken.isEmpty) {
+      await _settings.delete('outlookAccessToken');
+    } else {
+      await _settings.put('outlookAccessToken', accessToken);
+    }
+    if (refreshToken == null || refreshToken.isEmpty) {
+      await _settings.delete('outlookRefreshToken');
+    } else {
+      await _settings.put('outlookRefreshToken', refreshToken);
+    }
+    if (expiresAt == null) {
+      await _settings.delete('outlookTokenExpiresAt');
+    } else {
+      await _settings.put('outlookTokenExpiresAt', expiresAt.toIso8601String());
+    }
+    await setOutlookAccountEmail(accountEmail);
   }
 
   int countTransactionsWithCategory(String categoryId) {

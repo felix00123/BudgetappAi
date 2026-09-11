@@ -10,7 +10,7 @@ import '../utils/formatters.dart';
 class HomeWidgetService {
   HomeWidgetService._();
 
-  static const appGroupId = 'group.com.budgetapp.budgetApp';
+  static const appGroupId = 'group.com.budgetappai.sharedai';
   static const androidProviderName = 'ProgressWidgetProvider';
 
   static const goalsDataKey = 'goals_widget_data';
@@ -21,16 +21,21 @@ class HomeWidgetService {
   static Future<void> init() async {
     if (_initialized) return;
     _initialized = true;
-    await HomeWidget.setAppGroupId(appGroupId);
+    try {
+      await HomeWidget.setAppGroupId(appGroupId);
+    } catch (_) {
+      // Missing on unit tests / unsupported platforms.
+    }
   }
 
   static Future<void> sync({
     required List<SavingsGoal> goals,
     required List<Loan> loans,
   }) async {
-    await init();
+    try {
+      await init();
 
-    final goalsPayload = goals
+      final goalsPayload = goals
         .map(
           (g) => {
             'id': g.id,
@@ -63,19 +68,26 @@ class HomeWidgetService {
       androidName: androidProviderName,
       iOSName: 'budgetappai',
     );
+    } catch (_) {
+      // Missing on unit tests / unsupported platforms.
+    }
   }
 
   static Future<void> saveWidgetSelection({
     required String type,
     required String itemId,
   }) async {
-    await init();
-    await HomeWidget.saveWidgetData('widget_selected_type', type);
-    await HomeWidget.saveWidgetData('widget_selected_id', itemId);
-    await HomeWidget.updateWidget(
-      name: androidProviderName,
-      androidName: androidProviderName,
-      iOSName: 'budgetappai',
-    );
+    try {
+      await init();
+      await HomeWidget.saveWidgetData('widget_selected_type', type);
+      await HomeWidget.saveWidgetData('widget_selected_id', itemId);
+      await HomeWidget.updateWidget(
+        name: androidProviderName,
+        androidName: androidProviderName,
+        iOSName: 'budgetappai',
+      );
+    } catch (_) {
+      // Missing on unit tests / unsupported platforms.
+    }
   }
 }

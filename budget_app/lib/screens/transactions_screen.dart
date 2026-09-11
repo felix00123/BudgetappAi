@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/transaction.dart';
 import '../providers/budget_provider.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_nav_bar.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/transaction_tile.dart';
 import 'add_transaction_screen.dart';
@@ -36,6 +37,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Transactions'),
         actions: [
@@ -159,7 +161,7 @@ class _TransactionList extends StatelessWidget {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+      padding: EdgeInsets.fromLTRB(16, 0, 16, AppNavBar.contentInset(context)),
       itemCount: grouped.length,
       itemBuilder: (context, index) {
         final dateKey = grouped.keys.elementAt(index);

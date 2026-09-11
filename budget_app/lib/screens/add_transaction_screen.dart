@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../models/transaction.dart';
 import '../providers/budget_provider.dart';
 import '../theme/app_theme.dart';
+import '../widgets/ai_capture_actions.dart';
 import '../widgets/inline_create_sheets.dart';
 
 class AddTransactionScreen extends StatefulWidget {
@@ -138,6 +139,18 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       appBar: AppBar(
         title: Text(isEditing ? 'Edit Transaction' : 'Add Transaction'),
         actions: [
+          if (!isEditing) ...[
+            IconButton(
+              tooltip: 'Scan receipt',
+              icon: const Icon(Icons.photo_camera_outlined),
+              onPressed: () => AiCaptureActions.captureReceipt(context),
+            ),
+            IconButton(
+              tooltip: 'Say expense',
+              icon: const Icon(Icons.mic_none_rounded),
+              onPressed: () => AiCaptureActions.captureVoice(context),
+            ),
+          ],
           if (isEditing)
             IconButton(
               icon: const Icon(Icons.delete_outline, color: AppColors.expense),
