@@ -7,7 +7,7 @@ import '../providers/budget_provider.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/account_summary_card.dart';
-import '../widgets/app_nav_bar.dart';
+import '../widgets/ai_capture_actions.dart';
 import '../widgets/balance_card.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/goal_card.dart';
@@ -289,19 +289,25 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
                 if (provider.recentTransactions.isEmpty)
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: EmptyState(
-                      icon: Icons.receipt_long_outlined,
-                      title: 'No transactions yet',
-                      subtitle: 'Add your first income or expense to get started',
-                      action: FilledButton.icon(
-                        onPressed: () => _openAddTransaction(
-                          context,
-                          type: TransactionType.expense,
+                  SliverPadding(
+                    padding: EdgeInsets.only(
+                      bottom: HomeFloatingQuickActions.contentInset(context),
+                    ),
+                    sliver: SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: EmptyState(
+                        icon: Icons.receipt_long_outlined,
+                        title: 'No transactions yet',
+                        subtitle:
+                            'Add income, expense, or snap a receipt to get started',
+                        action: FilledButton.icon(
+                          onPressed: () => _openAddTransaction(
+                            context,
+                            type: TransactionType.expense,
+                          ),
+                          icon: const Icon(Icons.add),
+                          label: const Text('Add Transaction'),
                         ),
-                        icon: const Icon(Icons.add),
-                        label: const Text('Add Transaction'),
                       ),
                     ),
                   )
@@ -311,7 +317,7 @@ class HomeScreen extends StatelessWidget {
                       16,
                       0,
                       16,
-                      AppNavBar.contentInset(context),
+                      HomeFloatingQuickActions.contentInset(context),
                     ),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
@@ -331,32 +337,17 @@ class HomeScreen extends StatelessWidget {
           },
         ),
       ),
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          FloatingActionButton.extended(
-            heroTag: 'add_income',
-            onPressed: () => _openAddTransaction(
-              context,
-              type: TransactionType.income,
-            ),
-            backgroundColor: AppColors.income,
-            icon: const Icon(Icons.arrow_downward_rounded),
-            label: const Text('Income'),
-          ),
-          const SizedBox(height: 12),
-          FloatingActionButton.extended(
-            heroTag: 'add_expense',
-            onPressed: () => _openAddTransaction(
-              context,
-              type: TransactionType.expense,
-            ),
-            backgroundColor: AppColors.expense,
-            icon: const Icon(Icons.arrow_upward_rounded),
-            label: const Text('Expense'),
-          ),
-        ],
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: HomeFloatingQuickActions(
+        onIncome: () => _openAddTransaction(
+          context,
+          type: TransactionType.income,
+        ),
+        onExpense: () => _openAddTransaction(
+          context,
+          type: TransactionType.expense,
+        ),
+        onPhoto: () => AiCaptureActions.captureReceiptFromCamera(context),
       ),
     );
   }

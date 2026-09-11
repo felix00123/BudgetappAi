@@ -40,7 +40,18 @@ class AiCaptureActions {
       ),
     );
     if (source == null || !context.mounted) return;
+    await _pickAndDraftReceipt(context, source);
+  }
 
+  /// Opens the camera immediately (home floating action).
+  static Future<void> captureReceiptFromCamera(BuildContext context) {
+    return _pickAndDraftReceipt(context, ImageSource.camera);
+  }
+
+  static Future<void> _pickAndDraftReceipt(
+    BuildContext context,
+    ImageSource source,
+  ) async {
     final file = await _picker.pickImage(
       source: source,
       imageQuality: 85,

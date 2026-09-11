@@ -4,6 +4,7 @@ import '../models/transaction.dart';
 import '../screens/add_transaction_screen.dart';
 import '../theme/app_theme.dart';
 import 'ai_capture_actions.dart';
+import 'app_nav_bar.dart';
 
 /// Side-by-side quick actions to add income or expense, plus AI capture.
 class QuickAddActions extends StatelessWidget {
@@ -126,6 +127,114 @@ class QuickAddExpenseWidget extends StatelessWidget {
                 ),
               ),
       compact: compact,
+    );
+  }
+}
+
+/// Compact floating dock above the nav: income, photo, expense.
+class HomeFloatingQuickActions extends StatelessWidget {
+  const HomeFloatingQuickActions({
+    super.key,
+    required this.onIncome,
+    required this.onExpense,
+    required this.onPhoto,
+  });
+
+  final VoidCallback onIncome;
+  final VoidCallback onExpense;
+  final VoidCallback onPhoto;
+
+  /// Extra scroll padding so list content clears this dock + nav bar.
+  static double contentInset(BuildContext context) =>
+      AppNavBar.contentInset(context) + 72;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: AppNavBar.reservedHeight(context) + 8),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          boxShadow: AppShadows.floating,
+        ),
+        child: Material(
+          color: AppColors.card.withValues(alpha: 0.94),
+          shape: StadiumBorder(
+            side: BorderSide(color: AppColors.border.withValues(alpha: 0.9)),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _DockAction(
+                  tooltip: 'Add income',
+                  icon: Icons.south_west_rounded,
+                  background: AppColors.income,
+                  onTap: onIncome,
+                ),
+                const SizedBox(width: 8),
+                _DockAction(
+                  tooltip: 'Take photo',
+                  icon: Icons.photo_camera_rounded,
+                  background: AppColors.primary,
+                  emphasized: true,
+                  onTap: onPhoto,
+                ),
+                const SizedBox(width: 8),
+                _DockAction(
+                  tooltip: 'Add expense',
+                  icon: Icons.north_east_rounded,
+                  background: AppColors.expense,
+                  onTap: onExpense,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DockAction extends StatelessWidget {
+  const _DockAction({
+    required this.tooltip,
+    required this.icon,
+    required this.background,
+    required this.onTap,
+    this.emphasized = false,
+  });
+
+  final String tooltip;
+  final IconData icon;
+  final Color background;
+  final VoidCallback onTap;
+  final bool emphasized;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = emphasized ? 52.0 : 44.0;
+    final iconSize = emphasized ? 24.0 : 20.0;
+
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: background,
+        shape: const CircleBorder(),
+        elevation: emphasized ? 2 : 0,
+        shadowColor: background.withValues(alpha: 0.45),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: SizedBox(
+            width: size,
+            height: size,
+            child: Icon(icon, color: Colors.white, size: iconSize),
+          ),
+        ),
+      ),
     );
   }
 }
