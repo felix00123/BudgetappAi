@@ -96,6 +96,7 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>com.budgetappai.budgetapp</string>
+				<string>msauth.com.budgetappai.budgetapp</string>
 			</array>
 		</dict>
 		<dict>

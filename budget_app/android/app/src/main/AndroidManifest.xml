@@ -47,8 +47,8 @@
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data
-                    android:scheme="com.budgetappai.budgetapp"
-                    android:host="oauthredirect"/>
+                    android:scheme="msauth.com.budgetappai.budgetapp"
+                    android:host="auth"/>
             </intent-filter>
         </activity>
         <receiver

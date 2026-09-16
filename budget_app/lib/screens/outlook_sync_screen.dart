@@ -174,10 +174,11 @@ class _OutlookSyncScreenState extends State<OutlookSyncScreen> {
                 const Text(
                   '1. Azure Portal → Microsoft Entra ID → App registrations → New.\n'
                   '2. Supported accounts: personal Microsoft + work/school.\n'
-                  '3. Authentication → mobile redirect:\n'
-                  '   com.budgetappai.budgetapp://oauthredirect\n'
+                  '3. Authentication → mobile redirect (exact):\n'
+                  '   msauth.com.budgetappai.budgetapp://auth\n'
                   '4. API permissions → Microsoft Graph → Mail.Read (delegated).\n'
-                  '5. Copy Application (client) ID and run:\n'
+                  '5. Allow public client flows = Yes.\n'
+                  '6. Copy Application (client) ID and run:\n'
                   '   flutter run --dart-define=MICROSOFT_CLIENT_ID=your-id',
                   style: TextStyle(
                     color: AppColors.textSecondary,
@@ -216,15 +217,21 @@ class _OutlookSyncScreenState extends State<OutlookSyncScreen> {
       );
     } on OutlookSyncException catch (e) {
       if (!mounted) return;
+      final isCancelled = e.message.toLowerCase().contains('cancel');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message), backgroundColor: AppColors.expense),
+        SnackBar(
+          content: Text(e.message),
+          backgroundColor: isCancelled ? AppColors.warning : AppColors.expense,
+        ),
       );
     } catch (e) {
       if (!mounted) return;
+      final errStr = e.toString().toLowerCase();
+      final isCancelled = errStr.contains('cancel') || errStr.contains('code=1');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Could not connect: $e'),
-          backgroundColor: AppColors.expense,
+          content: Text(isCancelled ? 'Microsoft sign-in was cancelled.' : 'Could not connect: $e'),
+          backgroundColor: isCancelled ? AppColors.warning : AppColors.expense,
         ),
       );
     } finally {

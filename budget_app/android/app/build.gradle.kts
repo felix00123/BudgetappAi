@@ -28,6 +28,8 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // flutter_appauth: scheme portion of msauth.com.budgetappai.budgetapp://auth
+        manifestPlaceholders["appAuthRedirectScheme"] = "msauth.com.budgetappai.budgetapp"
     }
 
     buildTypes {

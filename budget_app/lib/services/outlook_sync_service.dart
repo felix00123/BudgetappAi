@@ -46,7 +46,7 @@ typedef OutlookTokenWriter = Future<void> Function(OutlookTokenStore tokens);
 /// Connects to Outlook / Microsoft 365 mail via AppAuth + Microsoft Graph.
 ///
 /// Configure an Azure App Registration (personal + organizational accounts)
-/// with redirect `com.budgetappai.budgetapp://oauthredirect` and delegated
+/// with redirect `msauth.com.budgetappai.budgetapp://auth` and delegated
 /// `Mail.Read`. Pass the client id with:
 /// `--dart-define=MICROSOFT_CLIENT_ID=...`
 class OutlookSyncService {
@@ -63,14 +63,17 @@ class OutlookSyncService {
         _queue = queue ?? GraphRequestQueue();
 
   static const clientId = String.fromEnvironment('MICROSOFT_CLIENT_ID');
+  /// Microsoft-recommended native redirect for AppAuth / Flutter on iOS.
+  /// Must match Azure "Mobile and desktop" redirect + Info.plist URL scheme.
   static const redirectUrl = String.fromEnvironment(
     'MICROSOFT_REDIRECT_URL',
-    defaultValue: 'com.budgetappai.budgetapp://oauthredirect',
+    defaultValue: 'msauth.com.budgetappai.budgetapp://auth',
   );
+  // `consumers` is for personal Outlook/Hotmail; `common` also works for mixed.
   static const _authorizeUrl =
-      'https://login.microsoftonline.com/common/oauth2/v2.0/authorize';
+      'https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize';
   static const _tokenUrl =
-      'https://login.microsoftonline.com/common/oauth2/v2.0/token';
+      'https://login.microsoftonline.com/consumers/oauth2/v2.0/token';
   static const _graphBase = 'https://graph.microsoft.com/v1.0';
 
   static const scopes = [
@@ -78,6 +81,7 @@ class OutlookSyncService {
     'profile',
     'email',
     'offline_access',
+    'https://graph.microsoft.com/User.Read',
     'https://graph.microsoft.com/Mail.Read',
   ];
 
@@ -110,36 +114,49 @@ class OutlookSyncService {
     }
 
     status.value = 'Opening Microsoft sign-in...';
-    final result = await _appAuth.authorizeAndExchangeCode(
-      AuthorizationTokenRequest(
-        clientId,
-        redirectUrl,
-        serviceConfiguration: const AuthorizationServiceConfiguration(
-          authorizationEndpoint: _authorizeUrl,
-          tokenEndpoint: _tokenUrl,
+    try {
+      final result = await _appAuth.authorizeAndExchangeCode(
+        AuthorizationTokenRequest(
+          clientId,
+          redirectUrl,
+          serviceConfiguration: const AuthorizationServiceConfiguration(
+            authorizationEndpoint: _authorizeUrl,
+            tokenEndpoint: _tokenUrl,
+          ),
+          scopes: scopes,
+          promptValues: ['select_account'],
+          externalUserAgent: ExternalUserAgent.ephemeralAsWebAuthenticationSession,
         ),
-        scopes: scopes,
-        promptValues: ['select_account'],
-      ),
-    );
+      );
 
-    final accessToken = result.accessToken;
-    if (accessToken == null || accessToken.isEmpty) {
-      throw const OutlookSyncException('Microsoft sign-in was cancelled.');
+      final accessToken = result.accessToken;
+      if (accessToken == null || accessToken.isEmpty) {
+        throw const OutlookSyncException('Microsoft sign-in was cancelled.');
+      }
+
+      status.value = 'Checking Outlook profile...';
+      final email = await _fetchProfileEmail(accessToken);
+      await _writeTokens(
+        OutlookTokenStore(
+          accessToken: accessToken,
+          refreshToken: result.refreshToken,
+          expiresAt: result.accessTokenExpirationDateTime,
+          accountEmail: email,
+        ),
+      );
+      status.value = 'Outlook connected';
+      return email;
+    } on FlutterAppAuthUserCancelledException {
+      status.value = '';
+      throw OutlookSyncException(
+        'Sign-in closed before Microsoft finished. '
+        'In Azure → Authentication, add redirect exactly: '
+        '$redirectUrl',
+      );
+    } catch (e) {
+      status.value = '';
+      rethrow;
     }
-
-    status.value = 'Checking Outlook profile...';
-    final email = await _fetchProfileEmail(accessToken);
-    await _writeTokens(
-      OutlookTokenStore(
-        accessToken: accessToken,
-        refreshToken: result.refreshToken,
-        expiresAt: result.accessTokenExpirationDateTime,
-        accountEmail: email,
-      ),
-    );
-    status.value = 'Outlook connected';
-    return email;
   }
 
   Future<void> disconnect() async {
