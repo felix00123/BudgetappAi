@@ -62,9 +62,9 @@ class _EmailImportScreenState extends State<EmailImportScreen> {
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  'Open the alert from BHD, APAP or Banreservas, copy the whole '
-                  'email and paste it below. Transactions and the balance the '
-                  'bank states are read separately.',
+                  'Open a card alert (notification of a purchase, withdrawal, or '
+                  'stated balance), copy the whole email and paste it below. '
+                  'Transactions and the balance the bank states are read separately.',
                   style: TextStyle(color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 16),

@@ -1,8 +1,8 @@
 {
   "description": "Template for Azure App Registration used by Outlook sync. Do not put secrets here — pass the client id at build time.",
   "client_id": "YOUR_AZURE_APPLICATION_CLIENT_ID",
-  "redirect_uri": "msauth.com.budgetappai.budgetapp://auth",
-  "tenant": "consumers",
+  "redirect_uri": "msauth.com.budgetappai.budgetapp://auth/",
+  "tenant": "common",
   "scopes": [
     "openid",
     "profile",

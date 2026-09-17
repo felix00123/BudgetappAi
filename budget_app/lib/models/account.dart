@@ -9,7 +9,7 @@ class Account {
   final double initialBalance;
   final int colorValue;
 
-  /// Issuer shown on bank alert emails, e.g. BHD, APAP, Banreservas.
+  /// Issuer shown on bank alert emails, e.g. BHD or Banco Santa Cruz.
   final String? bank;
 
   /// Last four digits used to match bank alert emails to this account.

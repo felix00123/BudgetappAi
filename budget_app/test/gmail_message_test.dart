@@ -88,4 +88,13 @@ void main() {
       expect(date.day, 15);
     });
   });
+
+  group('purchaseSearch', () {
+    test('matches alert shape not only three banks', () {
+      expect(GmailSyncService.purchaseSearch, contains('bsc.com.do'));
+      expect(GmailSyncService.purchaseSearch, contains('notificacion'));
+      expect(GmailSyncService.purchaseSearch, contains('terminada en'));
+      expect(GmailSyncService.purchaseSearch, contains('lugar de transaccion'));
+    });
+  });
 }

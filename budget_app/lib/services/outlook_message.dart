@@ -1,3 +1,4 @@
+import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html_parser;
 
 /// Helpers that turn a Microsoft Graph message JSON into plain fields
@@ -56,20 +57,44 @@ OutlookMessageFields? parseOutlookGraphMessage(Map<String, dynamic> json) {
   );
 }
 
+/// Keeps block tags as line breaks so `Monto:` / `Lugar de transacción:`
+/// stay on their own lines for the generic parser. Collapsing every
+/// whitespace character to a single space would glue the labels together.
 String _htmlToVisibleText(String html) {
   final doc = html_parser.parse(html);
-  final body = doc.body;
-  if (body == null) return html;
-  return body.text.replaceAll(RegExp(r'\s+'), ' ').trim();
+  final root = doc.body ?? doc.documentElement;
+  if (root == null) return html;
+  return _visibleText(root)
+      .replaceAll(RegExp(r'[ \t]+'), ' ')
+      .replaceAll(RegExp(r' *\n+ *'), '\n')
+      .trim();
 }
 
-/// KQL-ish search used with Graph `$search` for Dominican bank alerts.
+String _visibleText(dom.Node node) {
+  if (node is dom.Text) return node.data;
+  if (node is dom.Element &&
+      ['script', 'style', 'head'].contains(node.localName)) {
+    return '';
+  }
+  final text = node.nodes.map(_visibleText).join();
+  if (node is dom.Element &&
+      ['br', 'p', 'div', 'tr', 'td', 'th', 'li', 'table']
+          .contains(node.localName)) {
+    return '$text\n';
+  }
+  return text;
+}
+
+/// KQL-ish search used with Graph `$search` for bank card alerts.
+/// Matches alert *shape* (subject/body phrases), not a closed list of banks.
 String outlookBankSearchQuery({DateTime? since, DateTime? until}) {
   final parts = <String>[
     '(from:alertas@bhd.com.do OR from:no-reply@apap.com.do OR '
-        'from:notificaciones@banreservas.com OR subject:transacciones OR '
+        'from:notificaciones@banreservas.com OR from:notificaciones@bsc.com.do OR '
+        'subject:transacciones OR subject:notificacion OR subject:notificaciones OR '
         'subject:consumo OR subject:compra OR subject:aprobada OR '
         'subject:retiro OR subject:pago OR "tarjeta terminada" OR '
+        '"terminada en" OR "lugar de transaccion" OR "notificacion de consumo" OR '
         '"consumo realizado")',
   ];
   if (since != null) {

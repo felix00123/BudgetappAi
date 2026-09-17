@@ -36,6 +36,8 @@
 	<string>Budget App uses speech recognition to turn what you say into an expense draft.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>FlutterDeepLinkingEnabled</key>
+	<false/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

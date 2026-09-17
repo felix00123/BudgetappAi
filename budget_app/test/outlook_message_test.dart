@@ -33,6 +33,26 @@ void main() {
       expect(fields.receivedAt!.year, 2026);
     });
 
+    test('keeps HTML block tags as separate lines', () {
+      final fields = parseOutlookGraphMessage({
+        'id': 'msg-html-lines',
+        'subject': 'Notificación, Banco Santa Cruz',
+        'from': {
+          'emailAddress': {'address': 'notificaciones@bsc.com.do'},
+        },
+        'body': {
+          'contentType': 'html',
+          'content':
+              '<p>Monto: RD\$ 5,204.00</p><p>Lugar de transacción: BRAVO</p>',
+        },
+      });
+
+      expect(fields!.body, contains('Monto:'));
+      expect(fields.body, contains('Lugar de transacción:'));
+      expect(fields.body, isNot(contains('<p>')));
+      expect(fields.body.split('\n').length, greaterThan(1));
+    });
+
     test('falls back to bodyPreview when body is missing', () {
       final fields = parseOutlookGraphMessage({
         'id': 'msg-2',
@@ -58,6 +78,14 @@ void main() {
       expect(q, contains('alertas@bhd.com.do'));
       expect(q, contains('apap.com.do'));
       expect(q, contains('banreservas.com'));
+    });
+
+    test('matches alert shape not only three banks', () {
+      final q = outlookBankSearchQuery();
+      expect(q, contains('bsc.com.do'));
+      expect(q, contains('subject:notificacion'));
+      expect(q, contains('terminada en'));
+      expect(q, contains('lugar de transaccion'));
     });
 
     test('adds received date bounds', () {

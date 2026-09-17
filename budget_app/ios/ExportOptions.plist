@@ -4,9 +4,15 @@
 <dict>
 	<key>method</key>
 	<string>app-store-connect</string>
+	<key>destination</key>
+	<string>export</string>
+	<key>signingStyle</key>
+	<string>automatic</string>
+	<key>teamID</key>
+	<string>4WMF37F9X4</string>
 	<key>uploadSymbols</key>
 	<true/>
-	<key>destination</key>
-	<string>upload</string>
+	<key>manageAppVersionAndBuildNumber</key>
+	<false/>
 </dict>
 </plist>

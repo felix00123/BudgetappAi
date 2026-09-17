@@ -50,14 +50,16 @@ class GmailSyncService {
   static const _serverClientId =
       String.fromEnvironment('GOOGLE_OAUTH_SERVER_CLIENT_ID');
 
-  /// Same bank-alert search ClearPath uses.
+  /// Bank-alert search by shape (sender, subject, or card-alert phrases).
   static const purchaseSearch =
       '{from:alertas@bhd.com.do from:no-reply@apap.com.do '
-      'from:notificaciones@banreservas.com subject:transacciones '
-      'subject:notificaciones subject:consumo subject:purchase '
+      'from:notificaciones@banreservas.com from:notificaciones@bsc.com.do '
+      'from:notificaciones@ subject:transacciones '
+      'subject:notificaciones subject:notificacion subject:consumo subject:purchase '
       'subject:transaction subject:approved subject:compra '
       'subject:aprobada subject:autorizada subject:retiro subject:pago '
-      'subject:deposito "card ending" "tarjeta terminada" '
+      'subject:deposito "card ending" "tarjeta terminada" "terminada en" '
+      '"lugar de transaccion" "notificacion de consumo" '
       '"consumo realizado" "transaccion realizada" "tarjeta de debito" '
       '"retiro en cajero" "deposito de sueldo" "payment approved" '
       '"cash withdrawal"}';

@@ -7,7 +7,7 @@ import '../services/outlook_sync_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 
-/// Connect Outlook / Hotmail and import BHD / APAP / Banreservas alert emails.
+/// Connect Outlook / Hotmail and import bank card-alert emails.
 class OutlookSyncScreen extends StatefulWidget {
   const OutlookSyncScreen({super.key});
 
@@ -74,8 +74,9 @@ class _OutlookSyncScreenState extends State<OutlookSyncScreen> {
                 const SizedBox(height: 12),
                 const Text(
                   'Read-only access to Outlook / Hotmail via Microsoft Graph. '
-                  'Looks for BHD, APAP and Banreservas alerts, imports '
-                  'transactions, and stores stated card balances as history.',
+                  'Looks for card alerts (purchase, withdrawal, payment, stated '
+                  'balance), imports transactions, and stores stated card '
+                  'balances as history.',
                   style: TextStyle(color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 16),
@@ -174,8 +175,8 @@ class _OutlookSyncScreenState extends State<OutlookSyncScreen> {
                 const Text(
                   '1. Azure Portal → Microsoft Entra ID → App registrations → New.\n'
                   '2. Supported accounts: personal Microsoft + work/school.\n'
-                  '3. Authentication → mobile redirect (exact):\n'
-                  '   msauth.com.budgetappai.budgetapp://auth\n'
+                  '3. Authentication → mobile redirect (exact, include slash):\n'
+                  '   msauth.com.budgetappai.budgetapp://auth/\n'
                   '4. API permissions → Microsoft Graph → Mail.Read (delegated).\n'
                   '5. Allow public client flows = Yes.\n'
                   '6. Copy Application (client) ID and run:\n'

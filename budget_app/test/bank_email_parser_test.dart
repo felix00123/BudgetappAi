@@ -147,6 +147,80 @@ void main() {
       expect(result.transactions.single.amount, 850);
     });
 
+    test('parses Banco Santa Cruz consumption with Lugar de transacción', () {
+      final result = parseBankEmail(
+        from: 'notificaciones@bsc.com.do',
+        subject: 'Notificación, Banco Santa Cruz',
+        body: '''
+        Get Outlook for iOS
+        From: notificaciones@bsc.com.do <notificaciones@bsc.com.do>
+        Subject: Notificación, Banco Santa Cruz
+
+        NOTIFICACIÓN DE CONSUMO
+
+        Te notificamos que desde tu tarjeta de Crédito Clásica terminada en 1069 fue realizada la siguiente transacción:
+
+        Monto: RD\$ 5,204.00
+        Lugar de transacción: SM. BRAVO SAN VICENTE SANTO DOMINGODO
+        Fecha y hora: 8/9/2026 21:07:08
+        Estado: Aprobada
+      ''',
+      );
+
+      expect(result.bank, 'Banco Santa Cruz');
+      expect(result.lastFour, '1069');
+      expect(result.accountKind, BankAccountKind.credit);
+      expect(result.transactions, hasLength(1));
+      expect(result.transactions.single.amount, 5204);
+      expect(result.transactions.single.currency, 'DOP');
+      expect(result.transactions.single.merchant, contains('BRAVO'));
+      expect(result.transactions.single.categoryId, 'cat_food');
+      expect(result.transactions.single.date, DateTime(2026, 9, 8, 21, 7, 8));
+    });
+
+    test('parses an unknown bank using generic field aliases', () {
+      final result = parseBankEmail(
+        from: 'alerts@ficticiobank.com',
+        subject: 'Notificación de consumo',
+        body: '''
+        Tarjeta terminada en 4242
+        Monto: RD\$ 80.00
+        Lugar de transacción: SUPERMERCADO NACIONAL
+        Fecha y hora: 8/9/2026 09:01:00
+        Estado: Aprobada
+      ''',
+      );
+
+      expect(result.bank, 'Ficticiobank');
+      expect(result.lastFour, '4242');
+      expect(result.transactions, hasLength(1));
+      expect(result.transactions.single.amount, 80);
+      expect(result.transactions.single.merchant, contains('NACIONAL'));
+      expect(result.transactions.single.date.day, 8);
+      expect(result.transactions.single.date.month, 9);
+      expect(result.transactions.single.date.year, 2026);
+    });
+
+    test('parses Santa Cruz fields flattened onto one Outlook-style line', () {
+      final result = parseBankEmail(
+        from: 'Banco Santa Cruz <notificaciones@bsc.com.do>',
+        subject: 'Notificación, Banco Santa Cruz',
+        body:
+            'NOTIFICACIÓN DE CONSUMO Te notificamos que desde tu tarjeta de '
+            'Crédito Clásica terminada en 1069 fue realizada la siguiente '
+            'transacción: Monto: RD\$ 5,204.00 Lugar de transacción: SM. BRAVO '
+            'SAN VICENTE SANTO DOMINGODO Fecha y hora: 8/9/2026 21:07:08 '
+            'Estado: Aprobada',
+      );
+
+      expect(result.bank, 'Banco Santa Cruz');
+      expect(result.transactions, hasLength(1));
+      expect(result.transactions.single.amount, 5204);
+      expect(result.transactions.single.merchant, contains('BRAVO'));
+      expect(result.transactions.single.merchant, isNot(contains('Fecha')));
+      expect(result.transactions.single.date, DateTime(2026, 9, 8, 21, 7, 8));
+    });
+
     test('skips a declined purchase', () {
       final result = parseBankEmail(
         from: 'alertas@bhd.com.do',

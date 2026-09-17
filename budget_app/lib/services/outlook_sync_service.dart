@@ -63,17 +63,22 @@ class OutlookSyncService {
         _queue = queue ?? GraphRequestQueue();
 
   static const clientId = String.fromEnvironment('MICROSOFT_CLIENT_ID');
-  /// Microsoft-recommended native redirect for AppAuth / Flutter on iOS.
-  /// Must match Azure "Mobile and desktop" redirect + Info.plist URL scheme.
+  /// Native redirect for AppAuth on iOS.
+  ///
+  /// Trailing slash is required: Azure often returns the callback with `/`, and
+  /// AppAuth iOS rejects the redirect (looks like user cancel after Continue)
+  /// when the request URI does not match exactly. Register the same URI in
+  /// Azure "Mobile and desktop applications". Info.plist only needs the scheme
+  /// `msauth.com.budgetappai.budgetapp`.
   static const redirectUrl = String.fromEnvironment(
     'MICROSOFT_REDIRECT_URL',
-    defaultValue: 'msauth.com.budgetappai.budgetapp://auth',
+    defaultValue: 'msauth.com.budgetappai.budgetapp://auth/',
   );
-  // `consumers` is for personal Outlook/Hotmail; `common` also works for mixed.
+  // Prefer `common` so personal + work accounts both work with the same Azure app.
   static const _authorizeUrl =
-      'https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize';
+      'https://login.microsoftonline.com/common/oauth2/v2.0/authorize';
   static const _tokenUrl =
-      'https://login.microsoftonline.com/consumers/oauth2/v2.0/token';
+      'https://login.microsoftonline.com/common/oauth2/v2.0/token';
   static const _graphBase = 'https://graph.microsoft.com/v1.0';
 
   static const scopes = [
@@ -115,6 +120,10 @@ class OutlookSyncService {
 
     status.value = 'Opening Microsoft sign-in...';
     try {
+      // Non-ephemeral ASWebAuthenticationSession + redirect with trailing slash.
+      // Personal Outlook accounts show "Are you trying to sign in?" then Continue;
+      // without an exact redirect match AppAuth treats that return as cancel and
+      // the UI stays on Not connected (Microsoft may already have consented).
       final result = await _appAuth.authorizeAndExchangeCode(
         AuthorizationTokenRequest(
           clientId,
@@ -124,8 +133,7 @@ class OutlookSyncService {
             tokenEndpoint: _tokenUrl,
           ),
           scopes: scopes,
-          promptValues: ['select_account'],
-          externalUserAgent: ExternalUserAgent.ephemeralAsWebAuthenticationSession,
+          externalUserAgent: ExternalUserAgent.asWebAuthenticationSession,
         ),
       );
 
@@ -133,6 +141,18 @@ class OutlookSyncService {
       if (accessToken == null || accessToken.isEmpty) {
         throw const OutlookSyncException('Microsoft sign-in was cancelled.');
       }
+
+      // Persist tokens immediately so a later profile/Graph hiccup does not
+      // leave Microsoft consented while the app still shows "Not connected".
+      status.value = 'Saving Outlook session...';
+      await _writeTokens(
+        OutlookTokenStore(
+          accessToken: accessToken,
+          refreshToken: result.refreshToken,
+          expiresAt: result.accessTokenExpirationDateTime,
+          accountEmail: null,
+        ),
+      );
 
       status.value = 'Checking Outlook profile...';
       final email = await _fetchProfileEmail(accessToken);
@@ -149,9 +169,9 @@ class OutlookSyncService {
     } on FlutterAppAuthUserCancelledException {
       status.value = '';
       throw OutlookSyncException(
-        'Sign-in closed before Microsoft finished. '
-        'In Azure → Authentication, add redirect exactly: '
-        '$redirectUrl',
+        'Sign-in closed before the app received Microsoft tokens. '
+        'Microsoft may still show the app as connected — try Connect again, '
+        'and confirm Azure redirect is exactly: $redirectUrl',
       );
     } catch (e) {
       status.value = '';

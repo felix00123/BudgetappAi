@@ -7,7 +7,7 @@ import '../services/gmail_sync_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 
-/// Connect Gmail and import BHD / APAP / Banreservas alert emails.
+/// Connect Gmail and import bank card-alert emails.
 class GmailSyncScreen extends StatefulWidget {
   const GmailSyncScreen({super.key});
 
@@ -72,9 +72,9 @@ class _GmailSyncScreenState extends State<GmailSyncScreen> {
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  'Read-only access to Gmail. The app looks for alerts from '
-                  'BHD, APAP and Banreservas, imports transactions, and stores '
-                  'stated card balances as history only.',
+                  'Read-only access to Gmail. The app looks for card alerts '
+                  '(purchase, withdrawal, payment, stated balance), imports '
+                  'transactions, and stores stated card balances as history only.',
                   style: TextStyle(color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 16),
