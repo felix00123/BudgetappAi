@@ -212,7 +212,7 @@ class OutlookSyncService {
 
       final messageIds = <String>[];
       String? nextLink =
-          '$_graphBase/me/messages?\$search=${Uri.encodeQueryComponent('"$search"')}'
+          '$_graphBase/me/messages?\$search=${encodeOutlookGraphSearch(search)}'
           '&\$select=id,subject,from,receivedDateTime,bodyPreview'
           '&\$top=50';
 

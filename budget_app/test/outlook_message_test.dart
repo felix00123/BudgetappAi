@@ -84,8 +84,20 @@ void main() {
       final q = outlookBankSearchQuery();
       expect(q, contains('bsc.com.do'));
       expect(q, contains('subject:notificacion'));
-      expect(q, contains('terminada en'));
-      expect(q, contains('lugar de transaccion'));
+      expect(q, contains('terminada'));
+      expect(q, contains('transaccion'));
+      expect(q.contains('"'), isFalse);
+    });
+
+    test('graph search encoding wraps once and strips inner quotes', () {
+      final encoded = encodeOutlookGraphSearch(
+        '(from:a@b.com OR "tarjeta terminada") AND received>=2026-08-18',
+      );
+      final decoded = Uri.decodeQueryComponent(encoded);
+      expect(decoded.startsWith('"'), isTrue);
+      expect(decoded.endsWith('"'), isTrue);
+      expect(decoded.contains('"tarjeta'), isFalse);
+      expect(decoded, contains('tarjeta terminada'));
     });
 
     test('adds received date bounds', () {

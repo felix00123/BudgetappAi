@@ -6,6 +6,7 @@ import '../providers/budget_provider.dart';
 import '../services/outlook_sync_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
+import '../widgets/clear_synced_data_button.dart';
 
 /// Connect Outlook / Hotmail and import bank card-alert emails.
 class OutlookSyncScreen extends StatefulWidget {
@@ -145,6 +146,8 @@ class _OutlookSyncScreenState extends State<OutlookSyncScreen> {
                     ),
                   ),
                 ],
+                const SizedBox(height: 10),
+                ClearSyncedDataButton(busy: _busy),
               ],
             ),
           ),

@@ -44,12 +44,13 @@ class BankTransaction {
           : TransactionType.expense;
 
   /// Stable identity of this transaction, used to avoid importing it twice.
+  /// Bank name is omitted: Gmail vs Outlook (or a mailbox From) must not
+  /// create a second copy of the same card spend.
   String get fingerprint => [
-        bank,
         lastFour,
-        date.toIso8601String(),
+        _calendarDay(date),
         amount.toStringAsFixed(2),
-        _normalize(merchant),
+        fingerprintMerchant(merchant),
       ].join('|');
 }
 
@@ -149,6 +150,27 @@ String _normalize(String value) => value
     .replaceAll('ñ', 'n')
     .replaceAll(RegExp(r'\s+'), ' ')
     .trim();
+
+String _calendarDay(DateTime date) =>
+    '${date.year.toString().padLeft(4, '0')}-'
+    '${date.month.toString().padLeft(2, '0')}-'
+    '${date.day.toString().padLeft(2, '0')}';
+
+/// Letters/digits only, truncated, so "BANCO POPULAR ESTACION AM D…" matches
+/// the full merchant name on a later sync.
+String fingerprintMerchant(String value) {
+  final compact = _normalize(value).replaceAll(RegExp(r'[^a-z0-9]+'), '');
+  if (compact.length <= 20) return compact;
+  return compact.substring(0, 20);
+}
+
+bool merchantsLooselyMatch(String a, String b) {
+  final left = fingerprintMerchant(a);
+  final right = fingerprintMerchant(b);
+  if (left.isEmpty || right.isEmpty) return false;
+  if (left == right) return true;
+  return left.startsWith(right) || right.startsWith(left);
+}
 
 String _clean(String text) => text.replaceAll(RegExp(r'[\s\u00a0]+'), ' ').trim();
 
@@ -305,17 +327,37 @@ BankBalance? parseStatedBalance(String text, DateTime capturedAt) {
   );
 }
 
+const _mailboxDomains = {
+  'gmail.com',
+  'googlemail.com',
+  'outlook.com',
+  'hotmail.com',
+  'live.com',
+  'msn.com',
+  'yahoo.com',
+  'icloud.com',
+  'me.com',
+};
+
+bool _isMailboxDomain(String email) {
+  final host = email.split('@').last.toLowerCase();
+  return _mailboxDomains.contains(host);
+}
+
 /// Pulls the sender address out of pasted text when it still carries headers.
+/// Prefers a bank domain over the user's Gmail/Outlook address.
 String? detectSender(String text) {
-  final angled = RegExp(r'<([^\s<>@]+@[^\s<>]+)>').firstMatch(text);
-  if (angled != null) return angled.group(1)!.toLowerCase();
-  final header = RegExp(
-    r'(?:^|\n)\s*(?:from|de|remitente)\s*:\s*([^\s<>@]+@[^\s<>]+)',
+  final emails = <String>[];
+  for (final match in RegExp(
+    r'[^\s<>@]+@[^\s<>]+\.[a-z]{2,}',
     caseSensitive: false,
-  ).firstMatch(text);
-  if (header != null) return header.group(1)!.toLowerCase();
-  final bare = RegExp(r'[^\s<>@]+@[^\s<>]+\.[a-z]{2,}').firstMatch(text);
-  return bare?.group(0)?.toLowerCase();
+  ).allMatches(text)) {
+    emails.add(match.group(0)!.toLowerCase());
+  }
+  for (final email in emails) {
+    if (!_isMailboxDomain(email)) return email;
+  }
+  return emails.isEmpty ? null : emails.first;
 }
 
 String? _emailAddress(String from) {
@@ -347,13 +389,15 @@ const _knownDomains = {
 
 String _bankFromSender(String from) {
   final sender = _emailAddress(from);
-  if (sender == null) return '';
+  if (sender == null || _isMailboxDomain(sender)) return '';
   return _knownSenders[sender] ?? _knownDomains[sender.split('@').last] ?? '';
 }
 
 String _bankFromDomain(String from) {
   final sender = _emailAddress(from);
-  if (sender == null || !sender.contains('@')) return '';
+  if (sender == null || !sender.contains('@') || _isMailboxDomain(sender)) {
+    return '';
+  }
   final domain = sender.split('@').last.split('.').first;
   if (domain.length < 2) return '';
   return '${domain[0].toUpperCase()}${domain.substring(1)}';

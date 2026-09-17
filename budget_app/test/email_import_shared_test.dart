@@ -6,6 +6,7 @@ import 'package:path_provider_platform_interface/path_provider_platform_interfac
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import 'package:budget_app/models/parsed_bank_email.dart';
+import 'package:budget_app/models/transaction.dart';
 import 'package:budget_app/providers/budget_provider.dart';
 import 'package:budget_app/services/bank_email_parser.dart';
 import 'package:budget_app/services/storage_service.dart';
@@ -83,5 +84,116 @@ void main() {
     );
     expect(second.transactionsSaved, 0);
     expect(provider.transactions.where((t) => t.title == 'Uber').length, 1);
+  });
+
+  test('skips a second sync of the same spend with a different fingerprint',
+      () async {
+    final first = await provider.importParsedBankEmails(
+      [
+        ParsedBankEmail(
+          messageId: 'gmail-1',
+          result: BankEmailResult(
+            bank: 'Gmail',
+            lastFour: '5949',
+            transactions: [
+              BankTransaction(
+                lastFour: '5949',
+                bank: 'Gmail',
+                amount: 1000,
+                currency: 'DOP',
+                merchant: 'BANCO POPULAR ESTACION AM D',
+                date: DateTime(2026, 9, 10, 8),
+              ),
+            ],
+          ),
+        ),
+      ],
+      messagesChecked: 1,
+    );
+    expect(first.transactionsSaved, 1);
+
+    final second = await provider.importParsedBankEmails(
+      [
+        ParsedBankEmail(
+          messageId: 'outlook-1',
+          result: BankEmailResult(
+            bank: 'Banreservas',
+            lastFour: '5949',
+            transactions: [
+              BankTransaction(
+                lastFour: '5949',
+                bank: 'Banreservas',
+                amount: 1000,
+                currency: 'DOP',
+                merchant: 'BANCO POPULAR ESTACION AM DOMINGO',
+                date: DateTime(2026, 9, 10, 21, 5),
+              ),
+            ],
+          ),
+        ),
+      ],
+      messagesChecked: 1,
+    );
+    expect(second.transactionsSaved, 0);
+    expect(provider.transactions, hasLength(1));
+  });
+
+  test('clearSyncedEmailData removes imported txs so a later sync is fresh',
+      () async {
+    await provider.importParsedBankEmails(
+      [
+        ParsedBankEmail(
+          messageId: '1',
+          result: BankEmailResult(
+            bank: 'BHD',
+            lastFour: '9675',
+            transactions: [
+              BankTransaction(
+                lastFour: '9675',
+                bank: 'BHD',
+                amount: 100,
+                currency: 'DOP',
+                merchant: 'Uber',
+                date: DateTime(2026, 9, 1),
+              ),
+            ],
+          ),
+        ),
+      ],
+      messagesChecked: 1,
+    );
+    expect(provider.accountByLastFour('9675'), isNotNull);
+
+    final message = await provider.clearSyncedEmailData();
+    expect(message, contains('Cleared'));
+    expect(
+      provider.transactions.where((t) => t.source == TransactionSource.email),
+      isEmpty,
+    );
+    expect(provider.accountByLastFour('9675'), isNull);
+
+    final again = await provider.importParsedBankEmails(
+      [
+        ParsedBankEmail(
+          messageId: '1',
+          result: BankEmailResult(
+            bank: 'BHD',
+            lastFour: '9675',
+            transactions: [
+              BankTransaction(
+                lastFour: '9675',
+                bank: 'BHD',
+                amount: 100,
+                currency: 'DOP',
+                merchant: 'Uber',
+                date: DateTime(2026, 9, 1),
+              ),
+            ],
+          ),
+        ),
+      ],
+      messagesChecked: 1,
+    );
+    expect(again.transactionsSaved, 1);
   });
 }

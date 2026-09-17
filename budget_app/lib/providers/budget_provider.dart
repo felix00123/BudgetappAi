@@ -647,6 +647,97 @@ class BudgetProvider extends ChangeNotifier {
       _transactions.any((t) => t.externalId == externalId) ||
       _balanceSnapshots.any((s) => s.externalId == externalId);
 
+  /// True when this card spend is already in the ledger, even if a previous
+  /// sync stored a different fingerprint (bank name, time, truncated merchant).
+  bool alreadyImportedBankTransaction(BankTransaction candidate) {
+    if (hasExternalId(candidate.fingerprint)) return true;
+    final day = DateTime(
+      candidate.date.year,
+      candidate.date.month,
+      candidate.date.day,
+    );
+    return _transactions.any((existing) {
+      if (existing.source != TransactionSource.email) return false;
+      if ((existing.amount - candidate.amount).abs() > 0.005) return false;
+      final existingDay = DateTime(
+        existing.date.year,
+        existing.date.month,
+        existing.date.day,
+      );
+      if (existingDay != day) return false;
+      if (accountById(existing.accountId)?.lastFour != candidate.lastFour) {
+        return false;
+      }
+      return merchantsLooselyMatch(existing.title, candidate.merchant);
+    });
+  }
+
+  /// Deletes email-imported transactions, stated balances, and unused
+  /// card accounts so a test sync can start clean. Keeps Gmail/Outlook login.
+  Future<String> clearSyncedEmailData() async {
+    var transactionsDeleted = 0;
+    for (final transaction in List<Transaction>.from(_transactions)) {
+      if (transaction.source != TransactionSource.email) continue;
+      await _storage.deleteTransaction(transaction.id);
+      transactionsDeleted++;
+    }
+
+    var balancesDeleted = 0;
+    for (final snapshot in List<BalanceSnapshot>.from(_balanceSnapshots)) {
+      await _storage.deleteBalanceSnapshot(snapshot.id);
+      balancesDeleted++;
+    }
+
+    _transactions = _storage.getTransactions();
+    _balanceSnapshots = _storage.getBalanceSnapshots();
+
+    var accountsDeleted = 0;
+    for (final account in List<Account>.from(_accounts)) {
+      final lastFour = account.lastFour;
+      if (lastFour == null || lastFour.isEmpty) continue;
+      if (_transactions.any((t) => t.accountId == account.id)) continue;
+      await _storage.deleteAccount(account.id);
+      accountsDeleted++;
+    }
+
+    _accounts = _storage.getAccounts();
+    if (_accounts.isEmpty) {
+      for (final account in defaultAccounts()) {
+        await _storage.saveAccount(account);
+      }
+      _accounts = _storage.getAccounts();
+    }
+
+    _lastGmailSyncAt = null;
+    _lastOutlookSyncAt = null;
+    await _storage.setLastGmailSyncAt(null);
+    await _storage.setLastOutlookSyncAt(null);
+    notifyListeners();
+
+    if (transactionsDeleted == 0 &&
+        balancesDeleted == 0 &&
+        accountsDeleted == 0) {
+      return 'Nothing synced to clear.';
+    }
+    final parts = <String>[];
+    if (transactionsDeleted > 0) {
+      parts.add(
+        '$transactionsDeleted transaction${transactionsDeleted == 1 ? '' : 's'}',
+      );
+    }
+    if (balancesDeleted > 0) {
+      parts.add(
+        '$balancesDeleted balance${balancesDeleted == 1 ? '' : 's'}',
+      );
+    }
+    if (accountsDeleted > 0) {
+      parts.add(
+        '$accountsDeleted account${accountsDeleted == 1 ? '' : 's'}',
+      );
+    }
+    return 'Cleared ${parts.join(', ')}. You can sync again.';
+  }
+
   Future<String> connectGmail() async {
     final email = await _gmailSync.connect();
     _gmailAccountEmail = email;
@@ -772,7 +863,10 @@ class BudgetProvider extends ChangeNotifier {
       }
 
       for (final t in result.transactions) {
-        if (seenExternalIds.contains(t.fingerprint)) continue;
+        if (alreadyImportedBankTransaction(t) ||
+            seenExternalIds.contains(t.fingerprint)) {
+          continue;
+        }
         seenExternalIds.add(t.fingerprint);
         pendingTransactions.add(
           Transaction(

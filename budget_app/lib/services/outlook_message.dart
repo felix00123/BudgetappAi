@@ -86,16 +86,15 @@ String _visibleText(dom.Node node) {
 }
 
 /// KQL-ish search used with Graph `$search` for bank card alerts.
-/// Matches alert *shape* (subject/body phrases), not a closed list of banks.
+/// No inner double quotes: Graph already wraps the whole `$search` value
+/// in quotes, so `"tarjeta terminada"` inside it returns HTTP 400.
 String outlookBankSearchQuery({DateTime? since, DateTime? until}) {
   final parts = <String>[
     '(from:alertas@bhd.com.do OR from:no-reply@apap.com.do OR '
         'from:notificaciones@banreservas.com OR from:notificaciones@bsc.com.do OR '
         'subject:transacciones OR subject:notificacion OR subject:notificaciones OR '
         'subject:consumo OR subject:compra OR subject:aprobada OR '
-        'subject:retiro OR subject:pago OR "tarjeta terminada" OR '
-        '"terminada en" OR "lugar de transaccion" OR "notificacion de consumo" OR '
-        '"consumo realizado")',
+        'subject:retiro OR subject:pago OR terminada OR transaccion OR consumo)',
   ];
   if (since != null) {
     parts.add('received>=${_graphDate(since)}');
@@ -104,6 +103,13 @@ String outlookBankSearchQuery({DateTime? since, DateTime? until}) {
     parts.add('received<=${_graphDate(until)}');
   }
   return parts.join(' AND ');
+}
+
+/// Graph `$search` must be one quoted string. Strips inner `"` so KQL
+/// phrases cannot break the wrapper.
+String encodeOutlookGraphSearch(String kql) {
+  final cleaned = kql.replaceAll('"', '');
+  return Uri.encodeQueryComponent('"$cleaned"');
 }
 
 String _graphDate(DateTime date) {

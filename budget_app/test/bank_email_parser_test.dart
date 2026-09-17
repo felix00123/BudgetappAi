@@ -178,6 +178,46 @@ void main() {
       expect(result.transactions.single.date, DateTime(2026, 9, 8, 21, 7, 8));
     });
 
+    test('does not name the bank Gmail when the mailbox forwarded the alert', () {
+      final result = parseBankEmail(
+        from: 'MANUEL01FX@gmail.com',
+        subject: 'Notificación, Banco Santa Cruz',
+        body: '''
+        From: notificaciones@bsc.com.do <notificaciones@bsc.com.do>
+        Tarjeta de crédito terminada en 1069
+        Monto: RD\$ 10.00
+        Lugar de transacción: SM. BRAVO
+        Fecha y hora: 8/9/2026 21:07:08
+        Estado: Aprobada
+      ''',
+      );
+
+      expect(result.bank, 'Banco Santa Cruz');
+      expect(result.bank, isNot('Gmail'));
+    });
+
+    test('fingerprint is stable across bank label, time, and truncated merchant',
+        () {
+      final full = BankTransaction(
+        lastFour: '5949',
+        bank: 'Banreservas',
+        amount: 1000,
+        currency: 'DOP',
+        merchant: 'BANCO POPULAR ESTACION AM DOMINGO',
+        date: DateTime(2026, 9, 10, 21, 5),
+      );
+      final later = BankTransaction(
+        lastFour: '5949',
+        bank: 'Gmail',
+        amount: 1000,
+        currency: 'DOP',
+        merchant: 'BANCO POPULAR ESTACION AM D',
+        date: DateTime(2026, 9, 10, 8),
+      );
+
+      expect(full.fingerprint, later.fingerprint);
+    });
+
     test('parses an unknown bank using generic field aliases', () {
       final result = parseBankEmail(
         from: 'alerts@ficticiobank.com',

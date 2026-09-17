@@ -185,7 +185,7 @@ class _EmailImportScreenState extends State<EmailImportScreen> {
 
     try {
       final fresh = result.transactions
-          .where((t) => !provider.hasExternalId(t.fingerprint))
+          .where((t) => !provider.alreadyImportedBankTransaction(t))
           .toList();
 
       final transactions = fresh
@@ -279,7 +279,7 @@ class _ResultSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final duplicates = result.transactions
-        .where((t) => provider.hasExternalId(t.fingerprint))
+        .where((t) => provider.alreadyImportedBankTransaction(t))
         .length;
     final newCount = result.transactions.length - duplicates;
     final canSave = selectedAccountId != null &&
@@ -349,7 +349,7 @@ class _ResultSection extends StatelessWidget {
           ...result.transactions.map(
             (t) => _TransactionTile(
               transaction: t,
-              isDuplicate: provider.hasExternalId(t.fingerprint),
+              isDuplicate: provider.alreadyImportedBankTransaction(t),
             ),
           ),
         ],
