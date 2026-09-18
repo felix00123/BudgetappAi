@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:app_links/app_links.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:quick_actions/quick_actions.dart';
@@ -34,12 +35,16 @@ class ExternalLaunchService {
 
     await _setupQuickActions();
 
-    final initialUri = await _appLinks.getInitialLink();
-    if (initialUri != null) {
-      _pendingUri = initialUri;
-    }
+    try {
+      final initialUri = await _appLinks.getInitialLink();
+      if (initialUri != null) {
+        _pendingUri = initialUri;
+      }
 
-    _linkSubscription = _appLinks.uriLinkStream.listen(_handleUri);
+      _linkSubscription = _appLinks.uriLinkStream.listen(_handleUri);
+    } catch (_) {
+      // Deep links are unavailable on unsupported platforms.
+    }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _flushPendingUri();
@@ -55,29 +60,37 @@ class ExternalLaunchService {
   }
 
   static Future<void> _setupQuickActions() async {
-    const quickActions = QuickActions();
+    // Quick actions are only implemented on Android/iOS. Skipping the call on
+    // web/desktop avoids a MissingPluginException that would crash startup.
+    if (kIsWeb) return;
 
-    await quickActions.initialize((shortcutType) {
-      switch (shortcutType) {
-        case 'add_income':
-          openAddTransaction(TransactionType.income);
-        case 'add_expense':
-          openAddTransaction(TransactionType.expense);
-      }
-    });
+    try {
+      const quickActions = QuickActions();
 
-    await quickActions.setShortcutItems(const [
-      ShortcutItem(
-        type: 'add_income',
-        localizedTitle: 'Add Income',
-        localizedSubtitle: 'Log money in',
-      ),
-      ShortcutItem(
-        type: 'add_expense',
-        localizedTitle: 'Add Expense',
-        localizedSubtitle: 'Log money out',
-      ),
-    ]);
+      await quickActions.initialize((shortcutType) {
+        switch (shortcutType) {
+          case 'add_income':
+            openAddTransaction(TransactionType.income);
+          case 'add_expense':
+            openAddTransaction(TransactionType.expense);
+        }
+      });
+
+      await quickActions.setShortcutItems(const [
+        ShortcutItem(
+          type: 'add_income',
+          localizedTitle: 'Add Income',
+          localizedSubtitle: 'Log money in',
+        ),
+        ShortcutItem(
+          type: 'add_expense',
+          localizedTitle: 'Add Expense',
+          localizedSubtitle: 'Log money out',
+        ),
+      ]);
+    } catch (_) {
+      // Missing on unit tests / unsupported platforms.
+    }
   }
 
   static void _handleUri(Uri? uri) {
