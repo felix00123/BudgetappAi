@@ -19,6 +19,13 @@ if [ ! -f vendor/autoload.php ]; then
     composer install --no-interaction --prefer-dist
 fi
 
+mkdir -p storage/framework/cache/data \
+    storage/framework/sessions \
+    storage/framework/views \
+    storage/logs \
+    bootstrap/cache
+chown -R www-data:www-data storage bootstrap/cache
+
 if [ -n "${DB_HOST:-}" ] || [ -n "${DB_URL:-}" ] || [ -n "${DATABASE_URL:-}" ]; then
     php artisan migrate --force
 else
