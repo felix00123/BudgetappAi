@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 enum AccountType { cash, bank, credit, savings, other }
 
@@ -15,6 +16,12 @@ class Account {
   /// Last four digits used to match bank alert emails to this account.
   final String? lastFour;
 
+  /// Payment due date from a card screenshot (fecha de vencimiento).
+  final DateTime? dueDate;
+
+  /// Statement cutoff date from a card screenshot (fecha de corte).
+  final DateTime? cutoffDate;
+
   Account({
     required this.id,
     required this.name,
@@ -23,6 +30,8 @@ class Account {
     required this.colorValue,
     this.bank,
     this.lastFour,
+    this.dueDate,
+    this.cutoffDate,
   });
 
   Color get color => Color(colorValue);
@@ -35,6 +44,8 @@ class Account {
         'colorValue': colorValue,
         'bank': bank,
         'lastFour': lastFour,
+        'dueDate': dueDate?.toIso8601String(),
+        'cutoffDate': cutoffDate?.toIso8601String(),
       };
 
   factory Account.fromJson(Map<String, dynamic> json) => Account(
@@ -45,6 +56,8 @@ class Account {
         colorValue: json['colorValue'] as int,
         bank: json['bank'] as String?,
         lastFour: json['lastFour'] as String?,
+        dueDate: DateTime.tryParse(json['dueDate'] as String? ?? ''),
+        cutoffDate: DateTime.tryParse(json['cutoffDate'] as String? ?? ''),
       );
 
   Account copyWith({
@@ -54,6 +67,8 @@ class Account {
     int? colorValue,
     String? bank,
     String? lastFour,
+    DateTime? dueDate,
+    DateTime? cutoffDate,
   }) =>
       Account(
         id: id,
@@ -63,6 +78,8 @@ class Account {
         colorValue: colorValue ?? this.colorValue,
         bank: bank ?? this.bank,
         lastFour: lastFour ?? this.lastFour,
+        dueDate: dueDate ?? this.dueDate,
+        cutoffDate: cutoffDate ?? this.cutoffDate,
       );
 }
 
@@ -77,12 +94,13 @@ IconData accountTypeIcon(AccountType type) {
 }
 
 String accountTypeLabel(AccountType type) {
+  final es = (Intl.defaultLocale ?? 'en').toLowerCase().startsWith('es');
   return switch (type) {
-    AccountType.cash => 'Cash',
-    AccountType.bank => 'Bank',
-    AccountType.credit => 'Credit Card',
-    AccountType.savings => 'Savings',
-    AccountType.other => 'Other',
+    AccountType.cash => es ? 'Efectivo' : 'Cash',
+    AccountType.bank => es ? 'Banco' : 'Bank',
+    AccountType.credit => es ? 'Tarjeta de crédito' : 'Credit Card',
+    AccountType.savings => es ? 'Ahorros' : 'Savings',
+    AccountType.other => es ? 'Otro' : 'Other',
   };
 }
 

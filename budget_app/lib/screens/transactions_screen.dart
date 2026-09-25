@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/transaction.dart';
 import '../providers/budget_provider.dart';
+import '../providers/locale_controller.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_nav_bar.dart';
 import '../widgets/empty_state.dart';
@@ -36,10 +37,11 @@ class _TransactionsScreenState extends State<TransactionsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text('Transactions'),
+        title: Text(l10n.transactions),
         actions: [
           IconButton(
             onPressed: () => Navigator.push(
@@ -47,15 +49,15 @@ class _TransactionsScreenState extends State<TransactionsScreen>
               MaterialPageRoute(builder: (_) => const RecurringScreen()),
             ),
             icon: const Icon(Icons.event_repeat_rounded),
-            tooltip: 'Recurring',
+            tooltip: l10n.recurring,
           ),
         ],
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(text: 'All'),
-            Tab(text: 'Income'),
-            Tab(text: 'Expenses'),
+          tabs: [
+            Tab(text: l10n.all),
+            Tab(text: l10n.income),
+            Tab(text: l10n.expenses),
           ],
         ),
       ),
@@ -65,7 +67,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
             padding: const EdgeInsets.all(16),
             child: TextField(
               decoration: InputDecoration(
-                hintText: 'Search transactions...',
+                hintText: l10n.searchTransactions,
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
@@ -113,6 +115,7 @@ class _TransactionsScreenState extends State<TransactionsScreen>
         ],
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'transactions-fab',
         onPressed: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const AddTransactionScreen()),
@@ -147,10 +150,10 @@ class _TransactionList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (transactions.isEmpty) {
-      return const EmptyState(
+      return EmptyState(
         icon: Icons.receipt_long_outlined,
-        title: 'No transactions found',
-        subtitle: 'Tap + to add your first transaction',
+        title: context.l10n.noTransactionsFound,
+        subtitle: context.l10n.tapToAddTransaction,
       );
     }
 

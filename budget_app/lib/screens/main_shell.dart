@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/app_navigation.dart';
+import '../providers/locale_controller.dart';
 import '../widgets/ambient_background.dart';
 import '../widgets/app_nav_bar.dart';
 import 'ai_advisor_screen.dart';
@@ -21,37 +22,37 @@ class MainShell extends StatelessWidget {
     AiAdvisorScreen(),
   ];
 
-  static const _navItems = [
-    AppNavItem(
-      icon: Icons.dashboard_outlined,
-      selectedIcon: Icons.dashboard_rounded,
-      label: 'Home',
-    ),
-    AppNavItem(
-      icon: Icons.receipt_long_outlined,
-      selectedIcon: Icons.receipt_long_rounded,
-      label: 'Activity',
-    ),
-    AppNavItem(
-      icon: Icons.flag_outlined,
-      selectedIcon: Icons.flag_rounded,
-      label: 'Goals',
-    ),
-    AppNavItem(
-      icon: Icons.account_balance_outlined,
-      selectedIcon: Icons.account_balance_rounded,
-      label: 'Loans',
-    ),
-    AppNavItem(
-      icon: Icons.auto_awesome_outlined,
-      selectedIcon: Icons.auto_awesome_rounded,
-      label: 'Advisor',
-    ),
-  ];
-
   @override
   Widget build(BuildContext context) {
     final navigation = context.watch<AppNavigation>();
+    final l10n = context.l10n;
+    final navItems = [
+      AppNavItem(
+        icon: Icons.dashboard_outlined,
+        selectedIcon: Icons.dashboard_rounded,
+        label: l10n.navHome,
+      ),
+      AppNavItem(
+        icon: Icons.receipt_long_outlined,
+        selectedIcon: Icons.receipt_long_rounded,
+        label: l10n.navActivity,
+      ),
+      AppNavItem(
+        icon: Icons.flag_outlined,
+        selectedIcon: Icons.flag_rounded,
+        label: l10n.navGoals,
+      ),
+      AppNavItem(
+        icon: Icons.account_balance_outlined,
+        selectedIcon: Icons.account_balance_rounded,
+        label: l10n.navLoans,
+      ),
+      AppNavItem(
+        icon: Icons.auto_awesome_outlined,
+        selectedIcon: Icons.auto_awesome_rounded,
+        label: l10n.navAdvisor,
+      ),
+    ];
 
     return Scaffold(
       // Content slides under the floating bar so the frost has something to pick up.
@@ -66,7 +67,7 @@ class MainShell extends StatelessWidget {
       bottomNavigationBar: AppNavBar(
         currentIndex: navigation.currentIndex,
         onSelected: navigation.navigateTo,
-        items: _navItems,
+        items: navItems,
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../models/savings_goal.dart';
 import '../providers/budget_provider.dart';
+import '../providers/locale_controller.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/app_nav_bar.dart';
@@ -17,10 +18,11 @@ class GoalsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text('Savings Goals'),
+        title: Text(l10n.savingsGoals),
         actions: [
           IconButton(
             onPressed: () => Navigator.push(
@@ -30,7 +32,7 @@ class GoalsScreen extends StatelessWidget {
               ),
             ),
             icon: const Icon(Icons.widgets_outlined),
-            tooltip: 'Home screen widget',
+            tooltip: l10n.homeScreenWidget,
           ),
         ],
       ),
@@ -39,13 +41,12 @@ class GoalsScreen extends StatelessWidget {
           if (provider.goals.isEmpty) {
             return EmptyState(
               icon: Icons.flag_outlined,
-              title: 'No savings goals yet',
-              subtitle:
-                  'Create a goal like buying a car and see how long it will take to reach it',
+              title: l10n.noGoalsYet,
+              subtitle: l10n.noGoalsYetBody,
               action: FilledButton.icon(
                 onPressed: () => _openAddGoal(context),
                 icon: const Icon(Icons.add),
-                label: const Text('Create Goal'),
+                label: Text(l10n.createGoal),
               ),
             );
           }
@@ -71,9 +72,10 @@ class GoalsScreen extends StatelessWidget {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'goals-fab',
         onPressed: () => _openAddGoal(context),
         icon: const Icon(Icons.add),
-        label: const Text('New Goal'),
+        label: Text(context.l10n.newGoal),
       ),
     );
   }

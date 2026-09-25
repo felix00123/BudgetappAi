@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../models/transaction.dart';
 import '../providers/budget_provider.dart';
+import '../providers/locale_controller.dart';
 import '../theme/app_theme.dart';
 import '../widgets/ai_capture_actions.dart';
 import '../widgets/inline_create_sheets.dart';
@@ -70,7 +71,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
     if (categories.isEmpty && accounts.isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Add Transaction')),
+        appBar: AppBar(title: Text(context.l10n.addTransaction)),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -137,7 +138,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(isEditing ? 'Edit Transaction' : 'Add Transaction'),
+        title: Text(isEditing ? context.l10n.editTransaction : context.l10n.addTransaction),
         actions: [
           if (!isEditing) ...[
             IconButton(
@@ -352,7 +353,7 @@ class _TypeToggle extends StatelessWidget {
         children: [
           Expanded(
             child: _ToggleButton(
-              label: 'Expense',
+              label: context.l10n.expense,
               icon: Icons.arrow_upward_rounded,
               color: AppColors.expense,
               selected: type == TransactionType.expense,
@@ -361,7 +362,7 @@ class _TypeToggle extends StatelessWidget {
           ),
           Expanded(
             child: _ToggleButton(
-              label: 'Income',
+              label: context.l10n.income,
               icon: Icons.arrow_downward_rounded,
               color: AppColors.income,
               selected: type == TransactionType.income,

@@ -106,9 +106,22 @@ class _AccountTile extends StatelessWidget {
 }
 
 class AccountEditorScreen extends StatefulWidget {
-  const AccountEditorScreen({super.key, this.existing});
+  const AccountEditorScreen({
+    super.key,
+    this.existing,
+    this.initialLastFour,
+    this.initialDueDate,
+    this.initialCutoffDate,
+    this.initialBalance,
+    this.initialType,
+  });
 
   final Account? existing;
+  final String? initialLastFour;
+  final DateTime? initialDueDate;
+  final DateTime? initialCutoffDate;
+  final double? initialBalance;
+  final AccountType? initialType;
 
   @override
   State<AccountEditorScreen> createState() => _AccountEditorScreenState();
@@ -118,8 +131,12 @@ class _AccountEditorScreenState extends State<AccountEditorScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _balanceController = TextEditingController();
+  final _bankController = TextEditingController();
+  final _lastFourController = TextEditingController();
   late AccountType _type;
   late int _colorValue;
+  DateTime? _dueDate;
+  DateTime? _cutoffDate;
 
   bool get isEditing => widget.existing != null;
 
@@ -130,11 +147,25 @@ class _AccountEditorScreenState extends State<AccountEditorScreen> {
     if (existing != null) {
       _nameController.text = existing.name;
       _balanceController.text = existing.initialBalance.toString();
+      _bankController.text = existing.bank ?? '';
+      _lastFourController.text = existing.lastFour ?? '';
       _type = existing.type;
       _colorValue = existing.colorValue;
+      _dueDate = existing.dueDate;
+      _cutoffDate = existing.cutoffDate;
     } else {
-      _type = AccountType.bank;
+      _lastFourController.text = widget.initialLastFour ?? '';
+      if (widget.initialLastFour != null) {
+        _nameController.text = 'Card ••${widget.initialLastFour}';
+      }
+      if (widget.initialBalance != null) {
+        _balanceController.text = widget.initialBalance!.toStringAsFixed(2);
+      }
+      _type = widget.initialType ??
+          (widget.initialLastFour == null ? AccountType.bank : AccountType.credit);
       _colorValue = accountColorOptions.first;
+      _dueDate = widget.initialDueDate;
+      _cutoffDate = widget.initialCutoffDate;
     }
   }
 
@@ -142,6 +173,8 @@ class _AccountEditorScreenState extends State<AccountEditorScreen> {
   void dispose() {
     _nameController.dispose();
     _balanceController.dispose();
+    _bankController.dispose();
+    _lastFourController.dispose();
     super.dispose();
   }
 
@@ -154,6 +187,7 @@ class _AccountEditorScreenState extends State<AccountEditorScreen> {
       floatingActionButton: isEditing
           ? null
           : FloatingActionButton(
+              heroTag: 'account-editor-fab',
               onPressed: _save,
               child: const Icon(Icons.check),
             ),
@@ -194,11 +228,55 @@ class _AccountEditorScreenState extends State<AccountEditorScreen> {
             ),
             const SizedBox(height: 16),
             TextFormField(
+              controller: _bankController,
+              decoration: const InputDecoration(
+                labelText: 'Bank (optional)',
+                hintText: 'e.g. BHD',
+              ),
+              textCapitalization: TextCapitalization.words,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _lastFourController,
+              decoration: const InputDecoration(
+                labelText: 'Last 4 digits (optional)',
+                hintText: '9675',
+                helperText: 'Used to match purchase alerts from email',
+              ),
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(4),
+              ],
+              validator: (value) {
+                final digits = value?.trim() ?? '';
+                if (digits.isEmpty || digits.length == 4) return null;
+                return 'Enter all 4 digits';
+              },
+            ),
+            const SizedBox(height: 16),
+            _DateTile(
+              title: 'Fecha de corte',
+              value: _cutoffDate,
+              emptyHint: 'Cutoff date from your card screenshot',
+              onPick: () => _pickDate(isCutoff: true),
+              onClear: () => setState(() => _cutoffDate = null),
+            ),
+            const SizedBox(height: 12),
+            _DateTile(
+              title: 'Fecha de vencimiento',
+              value: _dueDate,
+              emptyHint: 'Pagar antes de, from your card screenshot',
+              onPick: () => _pickDate(isCutoff: false),
+              onClear: () => setState(() => _dueDate = null),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
               controller: _balanceController,
               decoration: const InputDecoration(
-                labelText: 'Starting Balance',
+                labelText: 'Balance',
                 prefixText: '\$ ',
-                helperText: 'Balance before tracked transactions',
+                helperText: 'Crédito disponible from the screenshot',
               ),
               keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
               inputFormatters: [
@@ -246,12 +324,18 @@ class _AccountEditorScreenState extends State<AccountEditorScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final provider = context.read<BudgetProvider>();
+    final lastFour = _lastFourController.text.trim();
+    final bank = _bankController.text.trim();
     final account = Account(
       id: widget.existing?.id ?? const Uuid().v4(),
       name: _nameController.text.trim(),
       type: _type,
       initialBalance: double.tryParse(_balanceController.text) ?? 0,
       colorValue: _colorValue,
+      bank: bank.isEmpty ? null : bank,
+      lastFour: lastFour.isEmpty ? null : lastFour,
+      dueDate: _dueDate,
+      cutoffDate: _cutoffDate,
     );
 
     if (isEditing) {
@@ -261,5 +345,69 @@ class _AccountEditorScreenState extends State<AccountEditorScreen> {
     }
 
     if (mounted) Navigator.pop(context);
+  }
+
+  Future<void> _pickDate({required bool isCutoff}) async {
+    final current = isCutoff ? _cutoffDate : _dueDate;
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: current ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+    );
+    if (picked != null && mounted) {
+      setState(() {
+        if (isCutoff) {
+          _cutoffDate = picked;
+        } else {
+          _dueDate = picked;
+        }
+      });
+    }
+  }
+}
+
+class _DateTile extends StatelessWidget {
+  const _DateTile({
+    required this.title,
+    required this.value,
+    required this.emptyHint,
+    required this.onPick,
+    required this.onClear,
+  });
+
+  final String title;
+  final DateTime? value;
+  final String emptyHint;
+  final VoidCallback onPick;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        side: const BorderSide(color: AppColors.border),
+      ),
+      title: Text(title),
+      subtitle: Text(value == null ? emptyHint : formatDate(value!)),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (value != null)
+            IconButton(
+              tooltip: 'Clear date',
+              onPressed: onClear,
+              icon: const Icon(Icons.close_rounded),
+            ),
+          IconButton(
+            tooltip: 'Pick date',
+            onPressed: onPick,
+            icon: const Icon(Icons.event_rounded),
+          ),
+        ],
+      ),
+    );
   }
 }

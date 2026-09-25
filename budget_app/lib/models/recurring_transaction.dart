@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+
 import '../utils/formatters.dart';
 import 'transaction.dart';
 
@@ -215,18 +217,31 @@ class RecurringTransaction {
   }
 }
 
+bool get _isEs =>
+    (Intl.defaultLocale ?? 'en').toLowerCase().startsWith('es');
+
 String describeRecurrence(RecurringTransaction recurring) {
   switch (recurring.frequency) {
     case RecurrenceFrequency.monthly:
-      return 'Every ${ordinalDay(recurring.dayOfMonth)} of the month';
+      return _isEs
+          ? 'Cada ${recurring.dayOfMonth} del mes'
+          : 'Every ${ordinalDay(recurring.dayOfMonth)} of the month';
     case RecurrenceFrequency.weekly:
-      return 'Every ${_weekdayName(recurring.dayOfWeek)}';
+      return _isEs
+          ? 'Cada ${_weekdayName(recurring.dayOfWeek)}'
+          : 'Every ${_weekdayName(recurring.dayOfWeek)}';
     case RecurrenceFrequency.yearly:
-      return 'Every ${formatMonthYear(DateTime(2000, recurring.monthOfYear, 1)).split(' ').first} ${ordinalDay(recurring.dayOfMonth)}';
+      final month = formatMonthYear(
+        DateTime(2000, recurring.monthOfYear, 1),
+      ).split(' ').first;
+      return _isEs
+          ? 'Cada ${recurring.dayOfMonth} de $month'
+          : 'Every $month ${ordinalDay(recurring.dayOfMonth)}';
   }
 }
 
 String ordinalDay(int day) {
+  if (_isEs) return '$day';
   if (day >= 11 && day <= 13) return '${day}th';
   return switch (day % 10) {
     1 => '${day}st',
@@ -237,7 +252,7 @@ String ordinalDay(int day) {
 }
 
 String _weekdayName(int weekday) {
-  const names = [
+  const en = [
     'Monday',
     'Tuesday',
     'Wednesday',
@@ -246,13 +261,23 @@ String _weekdayName(int weekday) {
     'Saturday',
     'Sunday',
   ];
+  const es = [
+    'lunes',
+    'martes',
+    'miércoles',
+    'jueves',
+    'viernes',
+    'sábado',
+    'domingo',
+  ];
+  final names = _isEs ? es : en;
   return names[(weekday - 1).clamp(0, 6)];
 }
 
 String frequencyLabel(RecurrenceFrequency frequency) {
   return switch (frequency) {
-    RecurrenceFrequency.monthly => 'Monthly',
-    RecurrenceFrequency.weekly => 'Weekly',
-    RecurrenceFrequency.yearly => 'Yearly',
+    RecurrenceFrequency.monthly => _isEs ? 'Mensual' : 'Monthly',
+    RecurrenceFrequency.weekly => _isEs ? 'Semanal' : 'Weekly',
+    RecurrenceFrequency.yearly => _isEs ? 'Anual' : 'Yearly',
   };
 }

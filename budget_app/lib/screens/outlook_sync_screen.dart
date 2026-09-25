@@ -7,6 +7,7 @@ import '../services/outlook_sync_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/clear_synced_data_button.dart';
+import '../widgets/mail_brand_logos.dart';
 
 /// Connect Outlook / Hotmail and import bank card-alert emails.
 class OutlookSyncScreen extends StatefulWidget {
@@ -57,11 +58,11 @@ class _OutlookSyncScreenState extends State<OutlookSyncScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.email_outlined, color: AppColors.primary),
-                    SizedBox(width: 12),
-                    Expanded(
+                    const OutlookLogo(size: 28),
+                    const SizedBox(width: 12),
+                    const Expanded(
                       child: Text(
                         'Outlook bank sync',
                         style: TextStyle(
@@ -100,13 +101,10 @@ class _OutlookSyncScreenState extends State<OutlookSyncScreen> {
                 ],
                 const SizedBox(height: 16),
                 if (!connected)
-                  FilledButton.icon(
-                    onPressed: _busy ? null : _connect,
-                    icon: const Icon(Icons.login_rounded),
-                    label: const Text('Connect Outlook'),
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size.fromHeight(48),
-                    ),
+                  MailConnectButton(
+                    brand: MailBrand.outlook,
+                    busy: _busy,
+                    onPressed: _connect,
                   )
                 else ...[
                   FilledButton.icon(

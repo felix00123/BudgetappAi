@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../models/loan.dart';
 import '../providers/budget_provider.dart';
+import '../providers/locale_controller.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/app_nav_bar.dart';
@@ -18,10 +19,11 @@ class LoansScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text('Loans'),
+        title: Text(l10n.loans),
         actions: [
           IconButton(
             onPressed: () => Navigator.push(
@@ -31,7 +33,7 @@ class LoansScreen extends StatelessWidget {
               ),
             ),
             icon: const Icon(Icons.widgets_outlined),
-            tooltip: 'Home screen widget',
+            tooltip: l10n.homeScreenWidget,
           ),
         ],
       ),
@@ -40,13 +42,12 @@ class LoansScreen extends StatelessWidget {
           if (provider.loans.isEmpty) {
             return EmptyState(
               icon: Icons.account_balance_outlined,
-              title: 'No loans tracked yet',
-              subtitle:
-                  'Add your mortgages, car loans, or personal loans to see amortization schedules and payoff dates',
+              title: l10n.noLoansYet,
+              subtitle: l10n.noLoansYetBody,
               action: FilledButton.icon(
                 onPressed: () => _openAddLoan(context),
                 icon: const Icon(Icons.add),
-                label: const Text('Add Loan'),
+                label: Text(l10n.addLoan),
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.warning,
                 ),
@@ -70,9 +71,9 @@ class LoansScreen extends StatelessWidget {
               ),
               if (provider.paidOffLoans.isNotEmpty) ...[
                 const SizedBox(height: 8),
-                const Text(
-                  'Paid Off',
-                  style: TextStyle(
+                Text(
+                  context.l10n.paidOff,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                     color: AppColors.textSecondary,
@@ -95,10 +96,11 @@ class LoansScreen extends StatelessWidget {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'loans-fab',
         onPressed: () => _openAddLoan(context),
         backgroundColor: AppColors.warning,
         icon: const Icon(Icons.add),
-        label: const Text('New Loan'),
+        label: Text(context.l10n.newLoan),
       ),
     );
   }

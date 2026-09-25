@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/recurring_transaction.dart';
 import '../models/transaction.dart';
 import '../providers/budget_provider.dart';
+import '../providers/locale_controller.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/empty_state.dart';
@@ -15,22 +16,22 @@ class RecurringScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Recurring'),
+        title: Text(l10n.recurring),
       ),
       body: Consumer<BudgetProvider>(
         builder: (context, provider, _) {
           if (provider.recurring.isEmpty) {
             return EmptyState(
               icon: Icons.event_repeat_rounded,
-              title: 'No recurring items yet',
-              subtitle:
-                  'Set up salary, rent, or subscriptions — e.g. \$5,000 every 1st of the month',
+              title: l10n.noRecurringYet,
+              subtitle: l10n.noRecurringYetBody,
               action: FilledButton.icon(
                 onPressed: () => _openAdd(context),
                 icon: const Icon(Icons.add),
-                label: const Text('Add Recurring'),
+                label: Text(l10n.addRecurring),
               ),
             );
           }
@@ -92,9 +93,10 @@ class RecurringScreen extends StatelessWidget {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'recurring-fab',
         onPressed: () => _openAdd(context),
         icon: const Icon(Icons.add),
-        label: const Text('New Recurring'),
+        label: Text(l10n.addRecurring),
       ),
     );
   }

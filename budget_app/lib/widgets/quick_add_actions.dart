@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/transaction.dart';
 import '../screens/add_transaction_screen.dart';
 import '../theme/app_theme.dart';
+import '../providers/locale_controller.dart';
 import 'ai_capture_actions.dart';
 import 'app_nav_bar.dart';
 
@@ -34,8 +35,8 @@ class QuickAddActions extends StatelessWidget {
           children: [
             Expanded(
               child: _QuickAddTile(
-                label: 'Scan receipt',
-                subtitle: 'Photo + AI',
+                label: context.l10n.scanReceipt,
+                subtitle: context.l10n.photoAi,
                 icon: Icons.photo_camera_rounded,
                 color: AppColors.primary,
                 onTap: () => AiCaptureActions.captureReceipt(context),
@@ -44,8 +45,8 @@ class QuickAddActions extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: _QuickAddTile(
-                label: 'Say expense',
-                subtitle: 'Voice + AI',
+                label: context.l10n.sayExpense,
+                subtitle: context.l10n.voiceAi,
                 icon: Icons.mic_rounded,
                 color: AppColors.secondary,
                 onTap: () => AiCaptureActions.captureVoice(context),
@@ -81,8 +82,8 @@ class QuickAddIncomeWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _QuickAddTile(
-      label: 'Add Income',
-      subtitle: compact ? null : 'Money in',
+      label: context.l10n.addIncome,
+      subtitle: compact ? null : context.l10n.moneyIn,
       icon: Icons.arrow_downward_rounded,
       color: AppColors.income,
       onTap: onTap ??
@@ -113,8 +114,8 @@ class QuickAddExpenseWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _QuickAddTile(
-      label: 'Add Expense',
-      subtitle: compact ? null : 'Money out',
+      label: context.l10n.addExpense,
+      subtitle: compact ? null : context.l10n.moneyOut,
       icon: Icons.arrow_upward_rounded,
       color: AppColors.expense,
       onTap: onTap ??
@@ -169,14 +170,14 @@ class HomeFloatingQuickActions extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 _DockAction(
-                  tooltip: 'Add income',
+                  tooltip: context.l10n.addIncome,
                   icon: Icons.south_west_rounded,
                   background: AppColors.income,
                   onTap: onIncome,
                 ),
                 const SizedBox(width: 8),
                 _DockAction(
-                  tooltip: 'Take photo',
+                  tooltip: context.l10n.takePhotoTooltip,
                   icon: Icons.photo_camera_rounded,
                   background: AppColors.primary,
                   emphasized: true,
@@ -184,7 +185,7 @@ class HomeFloatingQuickActions extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 _DockAction(
-                  tooltip: 'Add expense',
+                  tooltip: context.l10n.addExpense,
                   icon: Icons.north_east_rounded,
                   background: AppColors.expense,
                   onTap: onExpense,

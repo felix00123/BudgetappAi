@@ -27,9 +27,9 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Budget App needs access to your photo library so you can import receipts and budget files.</string>
+	<string>Budget App uses your photos to import receipts, statement screenshots, and budget files.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Budget App needs the camera to photograph receipts and categorize expenses with AI.</string>
+	<string>Budget App needs the camera to photograph receipts and card-balance screens.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Budget App needs the microphone so you can dictate expenses by voice.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>

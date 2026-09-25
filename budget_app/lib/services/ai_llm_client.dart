@@ -29,6 +29,13 @@ class AiLlmClient {
   }) {
     _requireConfigured(settings);
     return switch (settings.kind) {
+      AiProviderKind.cloud => _cloudText(
+          settings: settings,
+          systemPrompt: systemPrompt,
+          userPrompt: userPrompt,
+          temperature: temperature,
+          maxTokens: maxTokens,
+        ),
       AiProviderKind.openAi || AiProviderKind.local => _openAiCompatibleText(
           settings: settings,
           systemPrompt: systemPrompt,
@@ -57,6 +64,15 @@ class AiLlmClient {
   }) {
     _requireConfigured(settings);
     return switch (settings.kind) {
+      AiProviderKind.cloud => _cloudVision(
+          settings: settings,
+          systemPrompt: systemPrompt,
+          userPrompt: userPrompt,
+          imageBytes: imageBytes,
+          mimeType: mimeType,
+          temperature: temperature,
+          maxTokens: maxTokens,
+        ),
       AiProviderKind.openAi || AiProviderKind.local => _openAiCompatibleVision(
           settings: settings,
           systemPrompt: systemPrompt,
@@ -82,6 +98,75 @@ class AiLlmClient {
     if (!settings.isConfigured) {
       throw AiLlmException(settings.setupHint);
     }
+  }
+
+  Uri _cloudUri(AiProviderSettings settings, String path) {
+    final base = settings.cloudBaseUrl.trim().replaceAll(RegExp(r'/+$'), '');
+    return Uri.parse('$base$path');
+  }
+
+  Future<String> _cloudText({
+    required AiProviderSettings settings,
+    required String systemPrompt,
+    required String userPrompt,
+    required double temperature,
+    required int maxTokens,
+  }) async {
+    final response = await _client.post(
+      _cloudUri(settings, '/api/v1/ai/complete'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${settings.cloudToken}',
+      },
+      body: jsonEncode({
+        'systemPrompt': systemPrompt,
+        'userPrompt': userPrompt,
+        'temperature': temperature,
+        'maxTokens': maxTokens,
+      }),
+    );
+    return _readCloudContent(response);
+  }
+
+  Future<String> _cloudVision({
+    required AiProviderSettings settings,
+    required String systemPrompt,
+    required String userPrompt,
+    required Uint8List imageBytes,
+    required String mimeType,
+    required double temperature,
+    required int maxTokens,
+  }) async {
+    final response = await _client.post(
+      _cloudUri(settings, '/api/v1/ai/complete-image'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${settings.cloudToken}',
+      },
+      body: jsonEncode({
+        'systemPrompt': systemPrompt,
+        'userPrompt': userPrompt,
+        'imageBase64': base64Encode(imageBytes),
+        'mimeType': mimeType,
+        'temperature': temperature,
+        'maxTokens': maxTokens,
+      }),
+    );
+    return _readCloudContent(response);
+  }
+
+  String _readCloudContent(http.Response response) {
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw AiLlmException(
+        'Cloud error (${response.statusCode}). Check that you are signed in.',
+      );
+    }
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final content = data['content'];
+    if (content is! String || content.trim().isEmpty) {
+      throw const AiLlmException('Cloud returned an empty response.');
+    }
+    return content;
   }
 
   Uri _openAiCompatibleEndpoint(AiProviderSettings settings) {

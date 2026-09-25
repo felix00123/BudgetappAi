@@ -2,6 +2,7 @@ import '../models/account.dart';
 import '../models/ai_provider_settings.dart';
 import '../models/category.dart';
 import '../models/loan.dart';
+import '../models/month_summary.dart';
 import '../models/savings_goal.dart';
 import '../models/transaction.dart';
 import 'ai_llm_client.dart';
@@ -44,6 +45,7 @@ class AiAdvisorService {
     required List<SavingsGoal> goals,
     required List<BudgetCategory> categories,
     required List<Transaction> transactions,
+    List<MonthSummary> monthSummaries = const [],
     AiProviderSettings? aiSettings,
     @Deprecated('Use aiSettings') String? openAiApiKey,
   }) async {
@@ -57,16 +59,20 @@ class AiAdvisorService {
       try {
         final lang = spanish ? 'Spanish' : 'English';
         final promptContext = context.toPromptText();
+        final history = _historyText(monthSummaries);
         return await _llm.completeText(
           settings: settings,
           systemPrompt:
               'You are a friendly, practical personal finance advisor inside a budget app. '
               'You ALWAYS use the user\'s real data below — their goals, progress, recent income, '
               'recent expenses, accounts, and monthly totals. Reference specific amounts, categories, '
-              'and goal names when relevant. Give clear, actionable advice. '
+              'and goal names when relevant. When the user compares months, habits, or goals, '
+              'use MONTHLY HISTORY. Do not recite the whole history unless they ask. '
+              'Give clear, actionable advice. '
               'Use bullet points when helpful. Keep responses under 350 words. '
               'Respond in $lang.\n\n'
-              'USER FINANCIAL DATA:\n$promptContext',
+              'USER FINANCIAL DATA:\n$promptContext'
+              '${history.isEmpty ? '' : '\n\nMONTHLY HISTORY:\n$history'}',
           userPrompt: userMessage,
           temperature: 0.7,
           maxTokens: 600,
@@ -75,7 +81,7 @@ class AiAdvisorService {
         // Fall back to built-in keyword advisor.
       }
     }
-    return _getLocalAdvice(
+    final local = _getLocalAdvice(
       userMessage: userMessage,
       context: context,
       goals: goals,
@@ -83,6 +89,26 @@ class AiAdvisorService {
       categories: categories,
       spanish: spanish,
     );
+    if (monthSummaries.isEmpty || !_asksAboutHistory(userMessage)) {
+      return local;
+    }
+    return '$local\n\n${_historyText(monthSummaries)}';
+  }
+
+  bool _asksAboutHistory(String message) {
+    final text = message.toLowerCase();
+    return text.contains('month') ||
+        text.contains('history') ||
+        text.contains('last year') ||
+        text.contains('mes') ||
+        text.contains('histórico') ||
+        text.contains('historico') ||
+        text.contains('antes');
+  }
+
+  String _historyText(List<MonthSummary> summaries) {
+    final recent = summaries.take(12);
+    return recent.map((summary) => summary.toHistoryLine()).join('\n\n');
   }
 
   String _getLocalAdvice({

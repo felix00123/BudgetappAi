@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/account.dart';
 import '../models/balance_snapshot.dart';
 import '../providers/budget_provider.dart';
+import '../providers/locale_controller.dart';
 import '../services/finance_insights.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
@@ -17,7 +18,7 @@ class InsightsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Insights')),
+      appBar: AppBar(title: Text(context.l10n.insights)),
       body: Consumer<BudgetProvider>(
         builder: (context, provider, _) {
           if (provider.isLoading) {
@@ -32,9 +33,9 @@ class InsightsScreen extends StatelessWidget {
             children: [
               _SummaryRow(analytics: analytics),
               const SizedBox(height: 20),
-              const _SectionHeader(
-                title: 'Spending by category',
-                trailing: 'Last 6 months',
+              _SectionHeader(
+                title: context.l10n.spendingByCategory,
+                trailing: context.l10n.last6Months,
               ),
               const SizedBox(height: 8),
               CategoryBreakdownChart(
@@ -42,14 +43,15 @@ class InsightsScreen extends StatelessWidget {
                 categories: provider.categories,
               ),
               const SizedBox(height: 20),
-              const _SectionHeader(title: 'Monthly spending'),
+              _SectionHeader(title: context.l10n.monthlySpending),
               const SizedBox(height: 8),
               MonthlySpendingChart(values: analytics.monthlyTotals),
               const SizedBox(height: 20),
               _SectionHeader(
-                title: 'Bank-reported balances',
-                trailing: tracked.isEmpty ? null : '${tracked.length} account'
-                    '${tracked.length == 1 ? '' : 's'}',
+                title: context.l10n.bankReportedBalances,
+                trailing: tracked.isEmpty
+                    ? null
+                    : context.l10n.accountsCount(tracked.length),
               ),
               const SizedBox(height: 8),
               if (tracked.isEmpty)
@@ -89,7 +91,7 @@ class _SummaryRow extends StatelessWidget {
         Expanded(
           child: _Metric(
             icon: Icons.shopping_bag_outlined,
-            label: 'Spent',
+            label: context.l10n.spent,
             value: formatCurrency(analytics.spending),
             color: AppColors.expense,
           ),
@@ -98,7 +100,7 @@ class _SummaryRow extends StatelessWidget {
         Expanded(
           child: _Metric(
             icon: Icons.south_west_rounded,
-            label: 'Received',
+            label: context.l10n.received,
             value: formatCurrency(analytics.income),
             color: AppColors.income,
           ),

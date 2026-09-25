@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/ai_provider_settings.dart';
 import '../models/chat_message.dart';
 import '../providers/budget_provider.dart';
+import '../providers/locale_controller.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_nav_bar.dart';
 
@@ -18,13 +19,6 @@ class _AiAdvisorScreenState extends State<AiAdvisorScreen> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
 
-  static const _suggestions = [
-    '¿Cómo van mis metas de ahorro?',
-    '¿En qué gasté últimamente?',
-    'Resume mis ingresos recientes',
-    'Ayúdame a crear un presupuesto',
-  ];
-
   @override
   void dispose() {
     _controller.dispose();
@@ -34,10 +28,11 @@ class _AiAdvisorScreenState extends State<AiAdvisorScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text('AI Financial Advisor'),
+        title: Text(l10n.advisorTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
@@ -46,7 +41,7 @@ class _AiAdvisorScreenState extends State<AiAdvisorScreen> {
           IconButton(
             icon: const Icon(Icons.delete_outline),
             onPressed: () => _clearChat(context),
-            tooltip: 'Clear chat',
+            tooltip: l10n.clearChat,
           ),
         ],
       ),
@@ -57,7 +52,7 @@ class _AiAdvisorScreenState extends State<AiAdvisorScreen> {
               builder: (context, provider, _) {
                 if (provider.chatMessages.isEmpty) {
                   return _WelcomeView(
-                    suggestions: _suggestions,
+                    suggestions: context.l10n.advisorSuggestions,
                     onSuggestionTap: (s) {
                       _controller.text = s;
                       _sendMessage(provider);
@@ -110,22 +105,23 @@ class _AiAdvisorScreenState extends State<AiAdvisorScreen> {
   }
 
   void _clearChat(BuildContext context) {
+    final l10n = context.l10n;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Clear Chat'),
-        content: const Text('Delete all chat messages?'),
+        title: Text(l10n.clearChatTitle),
+        content: Text(l10n.clearChatBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () {
               context.read<BudgetProvider>().clearChat();
               Navigator.pop(ctx);
             },
-            child: const Text('Clear'),
+            child: Text(l10n.clear),
           ),
         ],
       ),
@@ -143,6 +139,16 @@ class _AiAdvisorScreenState extends State<AiAdvisorScreen> {
     final openAiModel = TextEditingController(text: initial.openAiModel);
     final geminiModel = TextEditingController(text: initial.geminiModel);
     final localApiKey = TextEditingController(text: initial.localApiKey ?? '');
+    final cloudUrl = TextEditingController(
+      text: initial.cloudBaseUrl.trim().isEmpty
+          ? defaultCloudBaseUrl()
+          : initial.cloudBaseUrl,
+    );
+    final cloudName = TextEditingController(text: '');
+    final cloudEmail = TextEditingController(text: initial.cloudEmail ?? '');
+    final cloudPassword = TextEditingController();
+    final cloudPasswordConfirm = TextEditingController();
+    var registerAccount = false;
 
     showModalBottomSheet(
       context: context,
@@ -180,25 +186,21 @@ class _AiAdvisorScreenState extends State<AiAdvisorScreen> {
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 8),
-                SegmentedButton<AiProviderKind>(
-                  segments: const [
-                    ButtonSegment(
-                      value: AiProviderKind.openAi,
-                      label: Text('OpenAI'),
-                    ),
-                    ButtonSegment(
-                      value: AiProviderKind.gemini,
-                      label: Text('Gemini'),
-                    ),
-                    ButtonSegment(
-                      value: AiProviderKind.local,
-                      label: Text('Local'),
-                    ),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    for (final option in const [
+                      (AiProviderKind.openAi, 'OpenAI'),
+                      (AiProviderKind.gemini, 'Gemini'),
+                      (AiProviderKind.local, 'Local'),
+                      (AiProviderKind.cloud, 'Cloud'),
+                    ])
+                      ChoiceChip(
+                        label: Text(option.$2),
+                        selected: kind == option.$1,
+                        onSelected: (_) => setModalState(() => kind = option.$1),
+                      ),
                   ],
-                  selected: {kind},
-                  onSelectionChanged: (value) {
-                    setModalState(() => kind = value.first);
-                  },
                 ),
                 const SizedBox(height: 16),
                 if (kind == AiProviderKind.openAi) ...[
@@ -272,11 +274,96 @@ class _AiAdvisorScreenState extends State<AiAdvisorScreen> {
                     ),
                   ),
                 ],
+                if (kind == AiProviderKind.cloud) ...[
+                  TextField(
+                    controller: cloudUrl,
+                    decoration: const InputDecoration(
+                      labelText: 'API URL',
+                      hintText: 'http://localhost:8080',
+                    ),
+                    keyboardType: TextInputType.url,
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: cloudEmail,
+                    decoration: const InputDecoration(labelText: 'Email'),
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: cloudPassword,
+                    decoration: const InputDecoration(
+                      labelText: 'Password',
+                      hintText: 'Leave blank to keep the current session',
+                    ),
+                    obscureText: true,
+                  ),
+                  const SizedBox(height: 8),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Create account'),
+                    value: registerAccount,
+                    onChanged: (value) =>
+                        setModalState(() => registerAccount = value),
+                  ),
+                  if (registerAccount) ...[
+                    TextField(
+                      controller: cloudName,
+                      decoration: const InputDecoration(labelText: 'Name'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: cloudPasswordConfirm,
+                      decoration: const InputDecoration(
+                        labelText: 'Confirm password',
+                      ),
+                      obscureText: true,
+                    ),
+                  ],
+                  if (initial.cloudToken != null &&
+                      initial.cloudToken!.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () async {
+                        await provider.signOutOfCloud();
+                        if (ctx.mounted) Navigator.pop(ctx);
+                      },
+                      child: const Text('Sign out'),
+                    ),
+                  ],
+                ],
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(
                     onPressed: () async {
+                      if (kind == AiProviderKind.cloud &&
+                          cloudPassword.text.isNotEmpty) {
+                        try {
+                          await provider.signInToCloud(
+                            name: cloudName.text.trim().isEmpty
+                                ? cloudEmail.text.trim()
+                                : cloudName.text.trim(),
+                            email: cloudEmail.text.trim(),
+                            password: cloudPassword.text,
+                            passwordConfirmation: registerAccount
+                                ? cloudPasswordConfirm.text
+                                : cloudPassword.text,
+                            baseUrl: cloudUrl.text.trim().isEmpty
+                                ? defaultCloudBaseUrl()
+                                : cloudUrl.text.trim(),
+                            register: registerAccount,
+                          );
+                          if (ctx.mounted) Navigator.pop(ctx);
+                        } catch (error) {
+                          if (ctx.mounted) {
+                            ScaffoldMessenger.of(ctx).showSnackBar(
+                              SnackBar(content: Text(error.toString())),
+                            );
+                          }
+                        }
+                        return;
+                      }
                       final settings = AiProviderSettings(
                         kind: kind,
                         openAiApiKey: openAiKey.text.trim().isEmpty
@@ -300,6 +387,12 @@ class _AiAdvisorScreenState extends State<AiAdvisorScreen> {
                         localModel: localModel.text.trim().isEmpty
                             ? 'llama3.2'
                             : localModel.text.trim(),
+                        cloudBaseUrl: cloudUrl.text.trim().isEmpty
+                            ? defaultCloudBaseUrl()
+                            : cloudUrl.text.trim(),
+                        cloudEmail: cloudEmail.text.trim().isEmpty
+                            ? null
+                            : cloudEmail.text.trim(),
                       );
                       await provider.setAiSettings(settings);
                       if (ctx.mounted) Navigator.pop(ctx);
@@ -320,6 +413,11 @@ class _AiAdvisorScreenState extends State<AiAdvisorScreen> {
       openAiModel.dispose();
       geminiModel.dispose();
       localApiKey.dispose();
+      cloudUrl.dispose();
+      cloudName.dispose();
+      cloudEmail.dispose();
+      cloudPassword.dispose();
+      cloudPasswordConfirm.dispose();
     });
   }
 }
@@ -353,23 +451,23 @@ class _WelcomeView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          const Text(
-            'Your AI Financial Advisor',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          Text(
+            context.l10n.advisorWelcomeTitle,
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
-          const Text(
-            'I analyze your goals, recent income, and spending to give personalized advice. Ask me anything!',
-            style: TextStyle(color: AppColors.textSecondary),
+          Text(
+            context.l10n.advisorWelcomeBody,
+            style: const TextStyle(color: AppColors.textSecondary),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32),
-          const Align(
+          Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              'Try asking:',
-              style: TextStyle(fontWeight: FontWeight.w600),
+              context.l10n.tryAsking,
+              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
           const SizedBox(height: 12),
@@ -544,7 +642,7 @@ class _ChatInput extends StatelessWidget {
             child: TextField(
               controller: controller,
               decoration: InputDecoration(
-                hintText: 'Ask about your finances...',
+                hintText: context.l10n.askFinancesHint,
                 filled: true,
                 fillColor: AppColors.surface,
                 border: OutlineInputBorder(

@@ -133,6 +133,31 @@ void main() {
       );
     });
 
+    test('posts cloud prompts to the hosted API', () async {
+      Uri? seen;
+      String? auth;
+      final client = AiLlmClient(
+        client: MockClient((request) async {
+          seen = request.url;
+          auth = request.headers['Authorization'];
+          return http.Response(jsonEncode({'content': 'from cloud'}), 200);
+        }),
+      );
+
+      final text = await client.completeText(
+        settings: const AiProviderSettings(
+          kind: AiProviderKind.cloud,
+          cloudBaseUrl: 'http://localhost:8080',
+          cloudToken: 'token-1',
+        ),
+        systemPrompt: 'sys',
+        userPrompt: 'hi',
+      );
+      expect(text, 'from cloud');
+      expect(seen.toString(), 'http://localhost:8080/api/v1/ai/complete');
+      expect(auth, 'Bearer token-1');
+    });
+
     test('throws setup hint when not configured', () async {
       final client = AiLlmClient(client: MockClient((_) async {
         fail('should not call network');

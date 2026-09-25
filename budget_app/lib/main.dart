@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/app_navigation.dart';
 import 'providers/budget_provider.dart';
+import 'providers/locale_controller.dart';
 import 'screens/main_shell.dart';
+import 'screens/setup_onboarding_screen.dart';
 import 'services/external_launch_service.dart';
 import 'services/home_widget_service.dart';
 import 'services/storage_service.dart';
+import 'theme/app_motion.dart';
 import 'theme/app_theme.dart';
+import 'widgets/ambient_background.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final storage = StorageService();
   await storage.init();
+  await LocaleController.preload();
   await ExternalLaunchService.init();
   await HomeWidgetService.init();
 
@@ -42,15 +48,29 @@ class _BudgetAppState extends State<BudgetApp> {
       providers: [
         ChangeNotifierProvider(create: (_) => AppNavigation()),
         ChangeNotifierProvider(
+          create: (_) => LocaleController(widget.storage),
+        ),
+        ChangeNotifierProvider(
           create: (_) => BudgetProvider(widget.storage)..init(),
         ),
       ],
-      child: MaterialApp(
-        navigatorKey: ExternalLaunchService.navigatorKey,
-        title: 'Budget App',
-        debugShowCheckedModeBanner: false,
-        theme: buildAppTheme(),
-        home: const _LaunchShell(),
+      child: Consumer<LocaleController>(
+        builder: (context, locales, _) {
+          return MaterialApp(
+            navigatorKey: ExternalLaunchService.navigatorKey,
+            title: 'Budget App',
+            debugShowCheckedModeBanner: false,
+            theme: buildAppTheme(),
+            locale: locales.locale,
+            supportedLocales: LocaleController.supportedLocales,
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            home: const _LaunchShell(),
+          );
+        },
       ),
     );
   }
@@ -74,6 +94,24 @@ class _LaunchShellState extends State<_LaunchShell> {
 
   @override
   Widget build(BuildContext context) {
-    return const MainShell();
+    final provider = context.watch<BudgetProvider>();
+
+    if (provider.isLoading) {
+      return const Scaffold(
+        backgroundColor: Colors.transparent,
+        body: AmbientBackground(
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
+
+    return AnimatedSwitcher(
+      duration: AppMotion.page,
+      switchInCurve: AppMotion.pageCurve,
+      switchOutCurve: AppMotion.pageCurve,
+      child: provider.hasCompletedOnboarding
+          ? const MainShell(key: ValueKey('main'))
+          : const SetupOnboardingScreen(key: ValueKey('onboarding')),
+    );
   }
 }

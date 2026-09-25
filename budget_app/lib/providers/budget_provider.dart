@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/account.dart';
@@ -11,16 +12,19 @@ import '../models/chat_message.dart';
 import '../models/expense_draft.dart';
 import '../models/import_row.dart';
 import '../models/loan.dart';
+import '../models/month_summary.dart';
 import '../models/parsed_bank_email.dart';
 import '../models/recurring_transaction.dart';
 import '../models/savings_goal.dart';
 import '../models/transaction.dart';
 import '../services/ai_advisor_service.dart';
+import '../services/cloud_api_client.dart';
 import '../services/ai_capture_service.dart';
 import '../services/bank_email_parser.dart';
 import '../services/excel_service.dart';
 import '../services/gmail_sync_service.dart';
 import '../services/home_widget_service.dart';
+import '../services/month_summary_service.dart';
 import '../services/outlook_sync_service.dart';
 import '../services/storage_service.dart';
 import '../utils/formatters.dart';
@@ -34,8 +38,12 @@ class BudgetProvider extends ChangeNotifier {
   final StorageService _storage;
   final ExcelService _excelService = ExcelService();
   final AiAdvisorService _aiService = AiAdvisorService();
+  final MonthSummaryService _monthSummariesService = MonthSummaryService();
   final AiCaptureService _aiCapture = AiCaptureService();
+  final CloudApiClient _cloud = CloudApiClient();
   final _uuid = const Uuid();
+  Timer? _cloudSyncTimer;
+  bool _cloudSyncing = false;
 
   List<Transaction> _transactions = [];
   List<SavingsGoal> _goals = [];
@@ -45,8 +53,10 @@ class BudgetProvider extends ChangeNotifier {
   List<BudgetCategory> _categories = [];
   List<Account> _accounts = [];
   List<BalanceSnapshot> _balanceSnapshots = [];
+  List<MonthSummary> _monthSummaries = [];
   bool _isLoading = true;
   bool _isAiThinking = false;
+  bool _onboardingCompleted = false;
   AiProviderSettings _aiSettings = const AiProviderSettings();
   String? _gmailAccountEmail;
   DateTime? _lastGmailSyncAt;
@@ -85,8 +95,10 @@ class BudgetProvider extends ChangeNotifier {
   List<BudgetCategory> get categories => _categories;
   List<Account> get accounts => _accounts;
   List<BalanceSnapshot> get balanceSnapshots => _balanceSnapshots;
+  List<MonthSummary> get monthSummaries => _monthSummaries;
   bool get isLoading => _isLoading;
   bool get isAiThinking => _isAiThinking;
+  bool get hasCompletedOnboarding => _onboardingCompleted;
   AiProviderSettings get aiSettings => _aiSettings;
   String? get openAiApiKey => _aiSettings.openAiApiKey;
   bool get isAiConfigured => _aiSettings.isConfigured;
@@ -248,17 +260,91 @@ class BudgetProvider extends ChangeNotifier {
     _categories = _storage.getCategories();
     _accounts = _storage.getAccounts();
     _balanceSnapshots = _storage.getBalanceSnapshots();
+    _monthSummaries = _storage.getMonthSummaries();
     _aiSettings = _storage.aiProviderSettings;
+    final cloudToken = await _cloud.readToken();
+    if (cloudToken != null && cloudToken.isNotEmpty) {
+      _aiSettings = _aiSettings.copyWith(cloudToken: cloudToken);
+    }
+    _storage.onLocalChange = _scheduleCloudSync;
     _gmailAccountEmail = _storage.gmailAccountEmail;
     _lastGmailSyncAt = _storage.lastGmailSyncAt;
     _outlookAccountEmail = _storage.outlookAccountEmail;
     _lastOutlookSyncAt = _storage.lastOutlookSyncAt;
+    _onboardingCompleted = _storage.onboardingCompleted;
     await _processDueRecurring();
     _isLoading = false;
     notifyListeners();
     await _syncHomeWidgets();
     // Restore Google session in the background; UI reads stored email meantime.
     unawaited(_restoreGmailSession());
+    unawaited(_ensureMonthSummaries());
+    unawaited(_runCloudSync());
+  }
+
+  void _scheduleCloudSync() {
+    _cloudSyncTimer?.cancel();
+    _cloudSyncTimer = Timer(const Duration(milliseconds: 700), () {
+      unawaited(_runCloudSync());
+    });
+  }
+
+  Future<void> _runCloudSync() async {
+    if (_cloudSyncing ||
+        _aiSettings.kind != AiProviderKind.cloud ||
+        !_aiSettings.isConfigured) {
+      return;
+    }
+    _cloudSyncing = true;
+    try {
+      await _cloud.sync(_storage, _aiSettings);
+      _transactions = _storage.getTransactions();
+      _goals = _storage.getGoals();
+      _loans = _storage.getLoans();
+      _recurring = _storage.getRecurring();
+      _chatMessages = _storage.getChatHistory();
+      _categories = _storage.getCategories();
+      _accounts = _storage.getAccounts();
+      _balanceSnapshots = _storage.getBalanceSnapshots();
+      _monthSummaries = _storage.getMonthSummaries();
+      notifyListeners();
+      unawaited(_ensureMonthSummaries());
+    } catch (_) {
+      // Offline or the API is down; local data stays usable.
+    } finally {
+      _cloudSyncing = false;
+    }
+  }
+
+  Future<void> signInToCloud({
+    required String name,
+    required String email,
+    required String password,
+    required String passwordConfirmation,
+    required String baseUrl,
+    required bool register,
+  }) async {
+    final next = await _cloud.signIn(
+      settings: _aiSettings.copyWith(
+        kind: AiProviderKind.cloud,
+        cloudBaseUrl: baseUrl,
+      ),
+      name: name,
+      email: email,
+      password: password,
+      passwordConfirmation: passwordConfirmation,
+      register: register,
+    );
+    await setAiSettings(next);
+    await _runCloudSync();
+  }
+
+  Future<void> signOutOfCloud() async {
+    await _cloud.signOut(_aiSettings);
+    await setAiSettings(
+      _aiSettings.copyWith(clearCloudToken: true),
+      clearToken: true,
+    );
   }
 
   Future<void> _restoreGmailSession() async {
@@ -379,6 +465,12 @@ class BudgetProvider extends ChangeNotifier {
     _categories = _storage.getCategories();
     notifyListeners();
     return null;
+  }
+
+  Future<void> completeOnboarding() async {
+    _onboardingCompleted = true;
+    await _storage.setOnboardingCompleted(true);
+    notifyListeners();
   }
 
   Future<void> addAccount(Account account) async {
@@ -963,6 +1055,49 @@ class BudgetProvider extends ChangeNotifier {
     );
   }
 
+  Future<void> _ensureMonthSummaries() async {
+    final existing = {for (final summary in _monthSummaries) summary.id};
+    final missing = MonthSummaryService.missingMonthIds(
+      transactions: _transactions,
+      existingIds: existing,
+    );
+    final needsNarrative = _aiSettings.isConfigured
+        ? _monthSummaries
+            .where(
+              (summary) =>
+                  summary.narrative == null || summary.narrative!.trim().isEmpty,
+            )
+            .map((summary) => summary.id)
+            .where((id) => !missing.contains(id))
+        : const Iterable<String>.empty();
+    final monthIds = [...missing, ...needsNarrative];
+    if (monthIds.isEmpty) return;
+
+    final spanish = (Intl.defaultLocale ?? 'en').toLowerCase().startsWith('es');
+    for (final monthId in monthIds) {
+      final facts = MonthSummaryService.factsFor(
+        monthId: monthId,
+        transactions: _transactions,
+        categories: _categories,
+      );
+      final narrative = await _monthSummariesService.narrativeFor(
+        facts: facts,
+        settings: _aiSettings,
+        spanish: spanish,
+      );
+      final summary = MonthSummary(
+        id: facts.id,
+        income: facts.income,
+        expenses: facts.expenses,
+        savings: facts.savings,
+        topCategories: facts.topCategories,
+        narrative: narrative,
+      );
+      await _storage.saveMonthSummary(summary);
+    }
+    _monthSummaries = _storage.getMonthSummaries();
+  }
+
   Future<void> sendChatMessage(String content) async {
     if (content.trim().isEmpty) return;
 
@@ -978,6 +1113,7 @@ class BudgetProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      await _ensureMonthSummaries();
       final financialContext = _aiService.buildContext(
         transactions: _transactions,
         goals: _goals,
@@ -996,6 +1132,7 @@ class BudgetProvider extends ChangeNotifier {
         goals: _goals,
         categories: _categories,
         transactions: _transactions,
+        monthSummaries: _monthSummaries,
         aiSettings: _aiSettings,
       );
 
@@ -1025,9 +1162,18 @@ class BudgetProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setAiSettings(AiProviderSettings settings) async {
-    await _storage.setAiProviderSettings(settings);
-    _aiSettings = settings;
+  Future<void> setAiSettings(
+    AiProviderSettings settings, {
+    bool clearToken = false,
+  }) async {
+    final merged = clearToken
+        ? settings.copyWith(clearCloudToken: true)
+        : settings.copyWith(
+            cloudToken: settings.cloudToken ?? _aiSettings.cloudToken,
+          );
+    await _cloud.writeToken(merged.cloudToken);
+    await _storage.setAiProviderSettings(merged);
+    _aiSettings = merged;
     notifyListeners();
   }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/transaction.dart';
+import '../providers/locale_controller.dart';
 import 'manage_accounts_screen.dart';
 import 'manage_categories_screen.dart';
 
@@ -9,15 +10,16 @@ class ManageScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return DefaultTabController(
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Categories & Accounts'),
-          bottom: const TabBar(
+          title: Text(l10n.categoriesAndAccounts),
+          bottom: TabBar(
             tabs: [
-              Tab(text: 'Categories', icon: Icon(Icons.category_outlined)),
-              Tab(text: 'Accounts', icon: Icon(Icons.account_balance_wallet_outlined)),
+              Tab(text: l10n.categories, icon: const Icon(Icons.category_outlined)),
+              Tab(text: l10n.accounts, icon: const Icon(Icons.account_balance_wallet_outlined)),
             ],
           ),
         ),
@@ -35,6 +37,7 @@ class ManageScreen extends StatelessWidget {
               builder: (context, _) {
                 final isAccounts = controller.index == 1;
                 return FloatingActionButton(
+                  heroTag: 'manage-fab',
                   onPressed: () {
                     if (isAccounts) {
                       Navigator.push(

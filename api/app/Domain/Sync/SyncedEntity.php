@@ -12,6 +12,7 @@ enum SyncedEntity: string
     case Loans = 'loans';
     case BalanceSnapshots = 'balance_snapshots';
     case ChatMessages = 'chat_messages';
+    case MonthSummaries = 'month_summaries';
 
     /**
      * @return list<string>

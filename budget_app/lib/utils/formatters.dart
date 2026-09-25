@@ -1,10 +1,22 @@
 import 'package:intl/intl.dart';
 
+String get _locale {
+  final value = Intl.defaultLocale ?? 'en';
+  return value.startsWith('es') ? 'es' : 'en';
+}
+
+bool get _isEs => _locale == 'es';
+
+DateFormat _dateFormat(String pattern) {
+  try {
+    return DateFormat(pattern, _locale);
+  } catch (_) {
+    return DateFormat(pattern);
+  }
+}
+
 final currencyFormat = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
 final compactCurrencyFormat = NumberFormat.compactCurrency(symbol: '\$');
-final dateFormat = DateFormat('MMM d, yyyy');
-final shortDateFormat = DateFormat('MMM d');
-final monthYearFormat = DateFormat('MMMM yyyy');
 final fileDateFormat = DateFormat('yyyy-MM-dd');
 
 String formatCurrency(double amount) => currencyFormat.format(amount);
@@ -16,9 +28,18 @@ String formatAmountWithCurrency(double amount, String currency) {
 }
 
 String formatCompactCurrency(double amount) => compactCurrencyFormat.format(amount);
-String formatDate(DateTime date) => dateFormat.format(date);
-String formatShortDate(DateTime date) => shortDateFormat.format(date);
-String formatMonthYear(DateTime date) => monthYearFormat.format(date);
+
+String formatDate(DateTime date) {
+  return _dateFormat(_isEs ? 'd MMM yyyy' : 'MMM d, yyyy').format(date);
+}
+
+String formatShortDate(DateTime date) {
+  return _dateFormat(_isEs ? 'd MMM' : 'MMM d').format(date);
+}
+
+String formatMonthYear(DateTime date) {
+  return _dateFormat('MMMM yyyy').format(date);
+}
 
 /// Stable yyyy-MM-dd key for maps and storage lookups.
 String dateKey(DateTime date) =>
@@ -34,10 +55,19 @@ DateTime parseDateKey(String key) {
 }
 
 String formatDuration(int months) {
-  if (months <= 0) return 'Already reached!';
-  if (months < 12) return '$months month${months == 1 ? '' : 's'}';
+  if (months <= 0) return _isEs ? '¡Ya alcanzado!' : 'Already reached!';
+  if (months < 12) {
+    if (_isEs) return months == 1 ? '1 mes' : '$months meses';
+    return '$months month${months == 1 ? '' : 's'}';
+  }
   final years = months ~/ 12;
   final remainingMonths = months % 12;
+  if (_isEs) {
+    final yearPart = years == 1 ? '1 año' : '$years años';
+    if (remainingMonths == 0) return yearPart;
+    final monthPart = remainingMonths == 1 ? '1 mes' : '$remainingMonths meses';
+    return '$yearPart, $monthPart';
+  }
   if (remainingMonths == 0) {
     return '$years year${years == 1 ? '' : 's'}';
   }

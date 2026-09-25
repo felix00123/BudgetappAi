@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../models/transaction.dart';
 import '../providers/budget_provider.dart';
+import '../providers/locale_controller.dart';
 import '../screens/add_transaction_screen.dart';
 import '../theme/app_theme.dart';
 import 'tracking_activity_card.dart';
@@ -13,24 +14,25 @@ class TrackingActivitySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<BudgetProvider>();
+    final l10n = context.l10n;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Logging Activity',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        Text(
+          l10n.loggingActivity,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
-        const Text(
-          'See how consistently you track your finances',
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+        Text(
+          l10n.loggingActivitySubtitle,
+          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
         ),
         const SizedBox(height: 12),
         TrackingActivityCard(
           icon: Icons.receipt_long_rounded,
-          title: 'Log Transactions',
-          subtitle: 'Record income and expenses daily',
+          title: l10n.logTransactions,
+          subtitle: l10n.logTransactionsSubtitle,
           color: AppColors.primary,
           activityCounts: provider.dailyActivityCounts,
           completedToday: provider.loggedToday,
@@ -39,8 +41,8 @@ class TrackingActivitySection extends StatelessWidget {
         const SizedBox(height: 12),
         TrackingActivityCard(
           icon: Icons.arrow_downward_rounded,
-          title: 'Track Income',
-          subtitle: 'Log when money comes in',
+          title: l10n.trackIncome,
+          subtitle: l10n.trackIncomeSubtitle,
           color: AppColors.income,
           activityCounts: provider.dailyIncomeCounts,
           completedToday: provider.loggedIncomeToday,
@@ -49,8 +51,8 @@ class TrackingActivitySection extends StatelessWidget {
         const SizedBox(height: 12),
         TrackingActivityCard(
           icon: Icons.arrow_upward_rounded,
-          title: 'Track Expenses',
-          subtitle: 'Log when money goes out',
+          title: l10n.trackExpenses,
+          subtitle: l10n.trackExpensesSubtitle,
           color: AppColors.expense,
           activityCounts: provider.dailyExpenseCounts,
           completedToday: provider.loggedExpenseToday,

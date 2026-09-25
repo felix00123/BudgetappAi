@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/app_navigation.dart';
 import '../providers/budget_provider.dart';
+import '../providers/locale_controller.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/account_summary_card.dart';
@@ -11,6 +12,7 @@ import '../widgets/ai_capture_actions.dart';
 import '../widgets/balance_card.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/goal_card.dart';
+import '../widgets/language_picker.dart';
 import '../widgets/loan_card.dart';
 import '../widgets/quick_add_actions.dart';
 import '../widgets/stat_card.dart';
@@ -23,13 +25,6 @@ import 'insights_screen.dart';
 import 'loans_screen.dart';
 import 'manage_screen.dart';
 import '../models/transaction.dart';
-
-String _greeting() {
-  final hour = DateTime.now().hour;
-  if (hour < 12) return 'Good morning';
-  if (hour < 18) return 'Good afternoon';
-  return 'Good evening';
-}
 
 /// Small tonal icon button used in the home header.
 class _HeaderButton extends StatelessWidget {
@@ -79,6 +74,7 @@ class HomeScreen extends StatelessWidget {
         bottom: false,
         child: Consumer<BudgetProvider>(
           builder: (context, provider, _) {
+            final l10n = context.l10n;
             if (provider.isLoading) {
               return const Center(child: CircularProgressIndicator());
             }
@@ -99,7 +95,7 @@ class HomeScreen extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    _greeting(),
+                                    l10n.greeting,
                                     style: const TextStyle(
                                       fontSize: 22,
                                       fontWeight: FontWeight.w800,
@@ -121,8 +117,14 @@ class HomeScreen extends StatelessWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 _HeaderButton(
+                                  icon: Icons.translate_rounded,
+                                  tooltip: l10n.languageLabel,
+                                  onTap: () => showLanguagePickerSheet(context),
+                                ),
+                                const SizedBox(width: 8),
+                                _HeaderButton(
                                   icon: Icons.insights_rounded,
-                                  tooltip: 'Insights',
+                                  tooltip: l10n.insights,
                                   onTap: () => Navigator.push(
                                     context,
                                     MaterialPageRoute(
@@ -133,7 +135,7 @@ class HomeScreen extends StatelessWidget {
                                 const SizedBox(width: 8),
                                 _HeaderButton(
                                   icon: Icons.tune_rounded,
-                                  tooltip: 'Categories & Accounts',
+                                  tooltip: l10n.categoriesAndAccounts,
                                   onTap: () => Navigator.push(
                                     context,
                                     MaterialPageRoute(
@@ -144,7 +146,7 @@ class HomeScreen extends StatelessWidget {
                                 const SizedBox(width: 8),
                                 _HeaderButton(
                                   icon: Icons.swap_vert_rounded,
-                                  tooltip: 'Import & Export',
+                                  tooltip: l10n.importAndExport,
                                   onTap: () => Navigator.push(
                                     context,
                                     MaterialPageRoute(
@@ -169,7 +171,7 @@ class HomeScreen extends StatelessWidget {
                           children: [
                             Expanded(
                               child: StatCard(
-                                title: 'This Month Income',
+                                title: l10n.thisMonthIncome,
                                 value: provider.monthlyIncome,
                                 icon: Icons.trending_up_rounded,
                                 color: AppColors.income,
@@ -178,7 +180,7 @@ class HomeScreen extends StatelessWidget {
                             const SizedBox(width: 12),
                             Expanded(
                               child: StatCard(
-                                title: 'This Month Expenses',
+                                title: l10n.thisMonthExpenses,
                                 value: provider.monthlyExpenses,
                                 icon: Icons.trending_down_rounded,
                                 color: AppColors.expense,
@@ -188,7 +190,7 @@ class HomeScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 12),
                         StatCard(
-                          title: 'Monthly Savings',
+                          title: l10n.monthlySavings,
                           value: provider.monthlySavings,
                           icon: Icons.savings_outlined,
                           color: provider.monthlySavings >= 0
@@ -208,9 +210,9 @@ class HomeScreen extends StatelessWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text(
-                                'Savings Goals',
-                                style: TextStyle(
+                              Text(
+                                l10n.savingsGoals,
+                                style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -222,7 +224,7 @@ class HomeScreen extends StatelessWidget {
                                     builder: (_) => const GoalsScreen(),
                                   ),
                                 ),
-                                child: const Text('See all'),
+                                child: Text(l10n.seeAll),
                               ),
                             ],
                           ),
@@ -241,9 +243,9 @@ class HomeScreen extends StatelessWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text(
-                                'Loans',
-                                style: TextStyle(
+                              Text(
+                                l10n.loans,
+                                style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -255,7 +257,7 @@ class HomeScreen extends StatelessWidget {
                                     builder: (_) => const LoansScreen(),
                                   ),
                                 ),
-                                child: const Text('See all'),
+                                child: Text(l10n.seeAll),
                               ),
                             ],
                           ),
@@ -270,9 +272,9 @@ class HomeScreen extends StatelessWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text(
-                              'Recent Transactions',
-                              style: TextStyle(
+                            Text(
+                              l10n.recentTransactions,
+                              style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -280,7 +282,7 @@ class HomeScreen extends StatelessWidget {
                             TextButton(
                               onPressed: () =>
                                   context.read<AppNavigation>().navigateTo(1),
-                              child: const Text('See all'),
+                              child: Text(l10n.seeAll),
                             ),
                           ],
                         ),
@@ -297,16 +299,15 @@ class HomeScreen extends StatelessWidget {
                       hasScrollBody: false,
                       child: EmptyState(
                         icon: Icons.receipt_long_outlined,
-                        title: 'No transactions yet',
-                        subtitle:
-                            'Add income, expense, or snap a receipt to get started',
+                        title: l10n.noTransactionsYet,
+                        subtitle: l10n.noTransactionsYetBody,
                         action: FilledButton.icon(
                           onPressed: () => _openAddTransaction(
                             context,
                             type: TransactionType.expense,
                           ),
                           icon: const Icon(Icons.add),
-                          label: const Text('Add Transaction'),
+                          label: Text(l10n.addTransaction),
                         ),
                       ),
                     ),
@@ -389,9 +390,9 @@ class _ExpenseChart extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Expenses by Category',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            Text(
+              context.l10n.expensesByCategory,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const SizedBox(height: 16),
             SizedBox(

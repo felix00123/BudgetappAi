@@ -7,6 +7,7 @@ import '../services/gmail_sync_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/clear_synced_data_button.dart';
+import '../widgets/mail_brand_logos.dart';
 
 /// Connect Gmail and import bank card-alert emails.
 class GmailSyncScreen extends StatefulWidget {
@@ -56,11 +57,11 @@ class _GmailSyncScreenState extends State<GmailSyncScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.mail_outline_rounded, color: AppColors.primary),
-                    SizedBox(width: 12),
-                    Expanded(
+                    const GmailLogo(size: 28),
+                    const SizedBox(width: 12),
+                    const Expanded(
                       child: Text(
                         'Gmail bank sync',
                         style: TextStyle(
@@ -97,13 +98,10 @@ class _GmailSyncScreenState extends State<GmailSyncScreen> {
                 ],
                 const SizedBox(height: 16),
                 if (!connected)
-                  FilledButton.icon(
-                    onPressed: _busy ? null : _connect,
-                    icon: const Icon(Icons.login_rounded),
-                    label: const Text('Connect Gmail'),
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size.fromHeight(48),
-                    ),
+                  MailConnectButton(
+                    brand: MailBrand.gmail,
+                    busy: _busy,
+                    onPressed: _connect,
                   )
                 else ...[
                   FilledButton.icon(

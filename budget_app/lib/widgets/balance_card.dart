@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
+import '../providers/locale_controller.dart';
 
 /// Hero summary of the current balance with income and expenses beneath it.
 class BalanceCard extends StatelessWidget {
@@ -58,7 +59,7 @@ class BalanceCard extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        'Total Balance',
+                        context.l10n.totalBalance,
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.82),
                           fontSize: 13,
@@ -107,13 +108,13 @@ class BalanceCard extends StatelessWidget {
                     children: [
                       _MiniStat(
                         icon: Icons.south_west_rounded,
-                        label: 'Income',
+                        label: context.l10n.income,
                         amount: income,
                       ),
                       const SizedBox(width: 12),
                       _MiniStat(
                         icon: Icons.north_east_rounded,
-                        label: 'Expenses',
+                        label: context.l10n.expenses,
                         amount: expenses,
                       ),
                     ],
