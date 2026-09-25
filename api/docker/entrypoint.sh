@@ -19,10 +19,10 @@ if [ ! -f vendor/autoload.php ]; then
     composer install --no-interaction --prefer-dist
 fi
 
-if [ -n "${DB_HOST:-}" ]; then
+if [ -n "${DB_HOST:-}" ] || [ -n "${DB_URL:-}" ] || [ -n "${DATABASE_URL:-}" ]; then
     php artisan migrate --force
 else
-    echo "DB_HOST is not set, skipping migrations"
+    echo "No database is configured, skipping migrations"
 fi
 
 exec "$@"
